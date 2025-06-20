@@ -13,3 +13,4 @@ wheels/
 # other
 .env
 docs
+.mcp.json
