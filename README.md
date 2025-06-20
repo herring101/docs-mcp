@@ -33,20 +33,30 @@ cp .env.example .env
 
 ### 2. ドキュメントを配置
 
-`docs/`ディレクトリにドキュメントを配置します。すべてのテキストファイルが対象になります。
+`docs/`ディレクトリにドキュメントを配置します。デフォルトでは、以下の拡張子のファイルが読み込まれます：
+
+- **ドキュメント系**: `.md`, `.mdx`, `.txt`, `.rst`, `.asciidoc`, `.org`
+- **設定・データ系**: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.conf`, `.xml`, `.csv`
+- **プログラミング言語**: `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.java`, `.cpp`, `.c`, `.h`, `.go`, `.rs`, `.rb`, `.php` など
+- **スクリプト**: `.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`
+- **Web系**: `.html`, `.css`, `.scss`, `.vue`, `.svelte`
+- **その他**: `.sql`, `.graphql`, `.proto`, `.ipynb`, `.dockerfile`, `.gitignore` など
 
 例 （docs以下のフォルダ名はなんでもOKです。）
 ```
 docs-mcp/
 └── docs/
-    ├── docs1/
-    │   ├── architecture.mdx
-    │   └── tools.mdx
-    ├── docs2/
-    │   ├── schema.json
-    │   └── schema.ts
-    └── docs3/
-        └── building-mcp-with-llms.mdx
+    ├── project1/
+    │   ├── README.md
+    │   ├── main.py
+    │   └── config.yaml
+    ├── project2/
+    │   ├── index.js
+    │   ├── styles.css
+    │   └── package.json
+    └── project3/
+        ├── api.graphql
+        └── docker-compose.yml
 ```
 
 ### 3. メタデータを生成（推奨）
@@ -126,6 +136,32 @@ uv run python scripts/generate_metadata.py
 ```
 
 複数のプロジェクトを管理する場合、異なるサーバー名で複数の設定を作成できます。
+
+### カスタムファイル拡張子の設定
+
+デフォルトで多くのファイル形式に対応していますが、特定の拡張子のみを対象にしたい場合は、環境変数`DOCS_FILE_EXTENSIONS`で指定できます：
+
+```json
+{
+    "mcpServers": {
+        "docs-mcp-custom": {
+            "command": "uv",
+            "args": [
+                "run",
+                "--directory",
+                "{path/to}/docs-mcp/src",
+                "docs_mcp.py"
+            ],
+            "env": {
+                "OPENAI_API_KEY": "your-openai-api-key",
+                "DOCS_FILE_EXTENSIONS": ".md,.mdx,.py,.js"  // 特定の拡張子のみ
+            }
+        }
+    }
+}
+```
+
+拡張子はカンマ区切りで指定し、ドット（.）は省略可能です。この設定は`generate_metadata.py`スクリプトでも同様に機能します。
 
 ## テスト
 

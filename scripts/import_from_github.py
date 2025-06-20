@@ -182,16 +182,19 @@ class GitHubImporter:
         if base_path and file_path.startswith(base_path):
             rel_path = file_path[len(base_path):].lstrip('/')
         
-        output_path = os.path.join(self.output_dir, rel_path)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # docs/ディレクトリ内に保存
+        base_dir = Path(__file__).parent.parent
+        docs_dir = base_dir / "docs"
+        output_path = docs_dir / self.output_dir / rel_path
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         
         try:
             # テキストファイルとして保存を試みる
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(str(output_path), 'w', encoding='utf-8') as f:
                 f.write(content.decode('utf-8'))
         except UnicodeDecodeError:
             # バイナリファイルとして保存
-            with open(output_path, 'wb') as f:
+            with open(str(output_path), 'wb') as f:
                 f.write(content)
     
     async def import_from_github(self, url: str):
@@ -203,7 +206,11 @@ class GitHubImporter:
         print(f"Repository: {repo}")
         print(f"Branch: {branch}")
         print(f"Path: /{path}")
-        print(f"Output directory: {self.output_dir}")
+        # 実際の出力ディレクトリを表示
+        base_dir = Path(__file__).parent.parent
+        docs_dir = base_dir / "docs"
+        actual_output_dir = docs_dir / self.output_dir
+        print(f"Output directory: {actual_output_dir}")
         
         # ファイル一覧を収集
         print("\nCollecting file list...")
@@ -243,7 +250,7 @@ class GitHubImporter:
                     await asyncio.sleep(self.rate_limit)
         
         self.progress_bar = None
-        print(f"\nImport completed! {len(files)} files saved to {self.output_dir}")
+        print(f"\nImport completed! {len(files)} files saved to {actual_output_dir}")
 
 
 async def main():

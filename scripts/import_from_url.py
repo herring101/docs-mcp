@@ -145,8 +145,11 @@ class URLImporter:
                 path = os.path.join(*parts)
             else:
                 path = 'index.md'
-            
-        return os.path.join(self.output_dir, path)
+        
+        # docs/ディレクトリ内に保存
+        base_dir = Path(__file__).parent.parent
+        docs_dir = base_dir / "docs"
+        return str(docs_dir / self.output_dir / path)
     
     def filter_links(self, links: List[str], base_url: str) -> List[str]:
         """リンクをフィルタリング"""
@@ -240,7 +243,11 @@ class URLImporter:
         
         # 全URLを収集して進捗バーを初期化
         print(f"Starting import from: {start_url}")
-        print(f"Output directory: {self.output_dir}")
+        # 実際の出力ディレクトリを表示
+        base_dir = Path(__file__).parent.parent
+        docs_dir = base_dir / "docs"
+        actual_output_dir = docs_dir / self.output_dir
+        print(f"Output directory: {actual_output_dir}")
         print(f"Max depth: {self.max_depth}")
         print(f"Concurrent downloads: {self.concurrent_downloads}")
         
@@ -298,7 +305,11 @@ class URLImporter:
                     future.result()
                     pbar.update(1)
                     
-        print(f"\nImport completed! {len(pages)} pages saved to {self.output_dir}")
+        # 実際の出力ディレクトリを表示
+        base_dir = Path(__file__).parent.parent
+        docs_dir = base_dir / "docs"
+        actual_output_dir = docs_dir / self.output_dir
+        print(f"\nImport completed! {len(pages)} pages saved to {actual_output_dir}")
 
 
 async def main():

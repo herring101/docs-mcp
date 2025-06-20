@@ -11,6 +11,27 @@ load_dotenv()
 
 
 class DocumentManager:
+    # デフォルトで対応するファイル拡張子（一般的なテキストファイル形式）
+    DEFAULT_EXTENSIONS = [
+        # ドキュメント系
+        '.md', '.mdx', '.txt', '.rst', '.asciidoc', '.org',
+        # データ・設定系
+        '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.xml', '.csv',
+        # プログラミング言語
+        '.py', '.js', '.jsx', '.ts', '.tsx', '.java', '.cpp', '.c', '.h', '.hpp',
+        '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.r', '.m',
+        # スクリプト・シェル
+        '.sh', '.bash', '.zsh', '.fish', '.ps1', '.bat', '.cmd',
+        # Web系
+        '.html', '.htm', '.css', '.scss', '.sass', '.less',
+        '.vue', '.svelte', '.astro',
+        # 設定・ビルド系
+        '.dockerfile', '.dockerignore', '.gitignore', '.env', '.env.example',
+        '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc',
+        # その他
+        '.sql', '.graphql', '.proto', '.ipynb'
+    ]
+    
     def __init__(self, allowed_folders: Optional[List[str]] = None):
         self.base_dir = Path(__file__).parent.parent
         self.docs_dir = self.base_dir / "docs"
@@ -19,6 +40,18 @@ class DocumentManager:
         
         # 許可されたフォルダのリスト
         self.allowed_folders = allowed_folders
+        
+        # ファイル拡張子の設定
+        extensions_env = os.getenv("DOCS_FILE_EXTENSIONS")
+        if extensions_env:
+            # 環境変数が設定されている場合は、それを使用（カンマ区切り）
+            self.allowed_extensions = [ext.strip() for ext in extensions_env.split(",") if ext.strip()]
+            # ドットがない場合は追加
+            self.allowed_extensions = [ext if ext.startswith('.') else f'.{ext}' for ext in self.allowed_extensions]
+            print(f"Using custom file extensions: {', '.join(self.allowed_extensions)}")
+        else:
+            # デフォルトの拡張子を使用
+            self.allowed_extensions = self.DEFAULT_EXTENSIONS
         
         self.docs_content: Dict[str, str] = {}
         self.docs_metadata: Dict[str, str] = {}
@@ -57,7 +90,7 @@ class DocumentManager:
     def _load_folder(self, folder_path: Path):
         """特定のフォルダ内のファイルを読み込む"""
         for file_path in folder_path.rglob("*"):
-            if file_path.is_file() and file_path.suffix in ['.mdx', '.md', '.txt', '.json', '.ts', '.yml', '.yaml']:
+            if file_path.is_file() and file_path.suffix.lower() in self.allowed_extensions:
                 # docs/プレフィックスを除去
                 doc_path = str(file_path.relative_to(self.docs_dir)).replace('\\', '/')
                 try:
@@ -70,7 +103,7 @@ class DocumentManager:
     def _load_all_files(self):
         """docs内のすべてのテキストファイルを読み込む"""
         for file_path in self.docs_dir.rglob("*"):
-            if file_path.is_file() and file_path.suffix in ['.mdx', '.md', '.txt', '.json', '.ts', '.yml', '.yaml']:
+            if file_path.is_file() and file_path.suffix.lower() in self.allowed_extensions:
                 # docs/プレフィックスを除去
                 doc_path = str(file_path.relative_to(self.docs_dir)).replace('\\', '/')
                 try:

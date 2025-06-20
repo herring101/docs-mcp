@@ -18,6 +18,27 @@ import numpy as np
 
 load_dotenv()
 
+# デフォルトで対応するファイル拡張子（DocumentManagerと同じ）
+DEFAULT_EXTENSIONS = [
+    # ドキュメント系
+    '.md', '.mdx', '.txt', '.rst', '.asciidoc', '.org',
+    # データ・設定系
+    '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.xml', '.csv',
+    # プログラミング言語
+    '.py', '.js', '.jsx', '.ts', '.tsx', '.java', '.cpp', '.c', '.h', '.hpp',
+    '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.r', '.m',
+    # スクリプト・シェル
+    '.sh', '.bash', '.zsh', '.fish', '.ps1', '.bat', '.cmd',
+    # Web系
+    '.html', '.htm', '.css', '.scss', '.sass', '.less',
+    '.vue', '.svelte', '.astro',
+    # 設定・ビルド系
+    '.dockerfile', '.dockerignore', '.gitignore', '.env', '.env.example',
+    '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc',
+    # その他
+    '.sql', '.graphql', '.proto', '.ipynb'
+]
+
 
 class MetadataGenerator:
     def __init__(self, api_key: str, concurrent_requests: int = 10):
@@ -251,20 +272,24 @@ async def main():
             embeddings = json.load(f)
         print(f"Loaded existing embeddings: {len(embeddings)} entries")
 
+    # ファイル拡張子の設定を取得
+    extensions_env = os.getenv("DOCS_FILE_EXTENSIONS")
+    if extensions_env:
+        # 環境変数が設定されている場合は、それを使用（カンマ区切り）
+        allowed_extensions = [ext.strip() for ext in extensions_env.split(",") if ext.strip()]
+        # ドットがない場合は追加
+        allowed_extensions = [ext if ext.startswith('.') else f'.{ext}' for ext in allowed_extensions]
+        print(f"Using custom file extensions: {', '.join(allowed_extensions)}")
+    else:
+        # デフォルトの拡張子を使用
+        allowed_extensions = DEFAULT_EXTENSIONS
+    
     # docs内のすべてのテキストファイルを収集
     print("\nScanning for documents...")
     files_data = []
 
     for file_path in docs_dir.rglob("*"):
-        if file_path.is_file() and file_path.suffix in [
-            ".mdx",
-            ".md",
-            ".txt",
-            ".json",
-            ".ts",
-            ".yml",
-            ".yaml",
-        ]:
+        if file_path.is_file() and file_path.suffix.lower() in allowed_extensions:
             # docs/プレフィックスを除去
             doc_path = str(file_path.relative_to(docs_dir)).replace("\\", "/")
 
