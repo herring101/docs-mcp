@@ -300,6 +300,25 @@ async def main():
 
     print(f"Found {len(files_data)} documents")
 
+    # 現在存在するファイルのパスセット
+    existing_files = {doc_path for doc_path, _ in files_data}
+    
+    # 削除されたファイルをチェック
+    deleted_from_metadata = [path for path in metadata.keys() if path not in existing_files]
+    deleted_from_embeddings = [path for path in embeddings.keys() if path not in existing_files]
+    
+    # 削除されたファイルの情報を削除
+    if deleted_from_metadata or deleted_from_embeddings:
+        print(f"\nCleaning up deleted files...")
+        if deleted_from_metadata:
+            print(f"- Removing {len(deleted_from_metadata)} entries from metadata")
+            for path in deleted_from_metadata:
+                del metadata[path]
+        if deleted_from_embeddings:
+            print(f"- Removing {len(deleted_from_embeddings)} entries from embeddings")
+            for path in deleted_from_embeddings:
+                del embeddings[path]
+
     # 処理が必要なファイルをチェック
     need_metadata = sum(1 for doc_path, _ in files_data if doc_path not in metadata)
     need_embeddings = sum(
@@ -308,7 +327,7 @@ async def main():
         if doc_path not in embeddings and len(content.strip()) > 0
     )
 
-    if need_metadata == 0 and need_embeddings == 0:
+    if need_metadata == 0 and need_embeddings == 0 and not deleted_from_metadata and not deleted_from_embeddings:
         print("\nAll files are up to date. No processing needed.")
         return
 
@@ -335,14 +354,14 @@ async def main():
         embeddings.update(new_embeddings)
 
     # メタデータを保存（ソート済み）
-    if metadata_updated:
+    if metadata_updated or deleted_from_metadata:
         with open(metadata_file, "w", encoding="utf-8") as f:
             sorted_metadata = dict(sorted(metadata.items()))
             json.dump(sorted_metadata, f, ensure_ascii=False, indent=2)
         print(f"\nMetadata saved to {metadata_file}")
 
     # Embeddingsを保存（ソート済み）
-    if embeddings_updated:
+    if embeddings_updated or deleted_from_embeddings:
         with open(embeddings_file, "w", encoding="utf-8") as f:
             sorted_embeddings = dict(sorted(embeddings.items()))
             json.dump(sorted_embeddings, f, ensure_ascii=False)
@@ -353,6 +372,10 @@ async def main():
     print(f"- Total embeddings: {len(embeddings)}")
     print(f"- New descriptions: {len(new_metadata)}")
     print(f"- New embeddings: {len(new_embeddings)}")
+    if deleted_from_metadata:
+        print(f"- Removed metadata: {len(deleted_from_metadata)}")
+    if deleted_from_embeddings:
+        print(f"- Removed embeddings: {len(deleted_from_embeddings)}")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ from tqdm import tqdm
 class URLImporter:
     def __init__(
         self,
-        output_dir: str = "imported",
+        output_dir: str = None,
         max_depth: int = 2,
         include_patterns: Optional[List[str]] = None,
         exclude_patterns: Optional[List[str]] = None,
@@ -241,6 +241,11 @@ class URLImporter:
         pages = {}
         queue = [(self.normalize_url(start_url), 0)]
         
+        # デフォルトの出力先をドメイン名に設定
+        if self.output_dir is None:
+            parsed_url = urlparse(start_url)
+            self.output_dir = parsed_url.netloc.replace(':', '_')  # ポート番号の:を_に置換
+        
         # 全URLを収集して進捗バーを初期化
         print(f"Starting import from: {start_url}")
         # 実際の出力ディレクトリを表示
@@ -319,8 +324,8 @@ async def main():
     parser.add_argument('url', help='インポート元のURL')
     parser.add_argument(
         '--output-dir', '-o',
-        default='imported',
-        help='出力先ディレクトリ (default: imported)'
+        default=None,
+        help='出力先ディレクトリ (default: ドメイン名)'
     )
     parser.add_argument(
         '--depth', '-d',

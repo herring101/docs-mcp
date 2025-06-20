@@ -178,7 +178,7 @@ uv run pytest tests/
 WebサイトのドキュメントをMarkdown形式で高速にインポートできます。並列ダウンロード機能により、大量のページも効率的に取得可能です。
 
 ```bash
-uv run python scripts/import_from_url.py https://example.com/docs
+uv run python scripts/url_import.py https://example.com/docs
 ```
 
 **主な特徴:**
@@ -188,7 +188,7 @@ uv run python scripts/import_from_url.py https://example.com/docs
 - 🌲 URLのパス構造を維持したディレクトリツリーで保存
 
 **オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `imported`）
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: ドメイン名）
 - `--depth`, `-d`: クロールの深さ（デフォルト: 2）
 - `--include-pattern`, `-i`: 含めるURLパターン（正規表現、複数指定可）
 - `--exclude-pattern`, `-e`: 除外するURLパターン（正規表現、複数指定可）
@@ -200,16 +200,16 @@ uv run python scripts/import_from_url.py https://example.com/docs
 
 ```bash
 # 基本的な使用
-uv run python scripts/import_from_url.py https://mcp-jp.apidog.io/
+uv run python scripts/url_import.py https://mcp-jp.apidog.io/
 
 # 特定のパスのみを深さ3でインポート
-uv run python scripts/import_from_url.py https://docs.example.com \
+uv run python scripts/url_import.py https://docs.example.com \
     --depth 3 \
     --include-pattern "/api/.*" \
     --exclude-pattern ".*/deprecated/.*"
 
 # 同時接続数を増やして高速化（サーバーに優しく）
-uv run python scripts/import_from_url.py https://docs.example.com \
+uv run python scripts/url_import.py https://docs.example.com \
     --concurrent 20 \
     --rate-limit 0.05
 ```
@@ -218,45 +218,36 @@ uv run python scripts/import_from_url.py https://docs.example.com \
 
 ### GitHubリポジトリからインポート
 
-GitHubリポジトリの特定フォルダ以下のファイルをローカルに取得できます。
+Gitのsparse-checkoutを使用して、GitHubリポジトリの特定フォルダをローカルに取得できます。
 
 ```bash
-uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/branch/path
+uv run python scripts/github_import.py https://github.com/owner/repo/tree/branch/path
 ```
 
 **主な特徴:**
-- 📁 指定したフォルダ以下を再帰的に取得
-- 🚀 並列ダウンロードで高速化
-- 🔑 GitHub Personal Access Token対応（レート制限回避）
-- 🎯 ファイルパターンによるフィルタリング
+- 📁 指定したフォルダのみを効率的に取得（sparse-checkout使用）
+- 🚀 Gitの機能を使った高速ダウンロード
+- 🔒 APIレート制限なし
+- 📦 最小限のデータ転送（shallow clone & blob filter）
 
 **オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `github`）
-- `--token`, `-t`: GitHub Personal Access Token（環境変数`GITHUB_TOKEN`でも設定可）
-- `--include-pattern`, `-i`: 含めるファイルパターン（正規表現、複数指定可）
-- `--exclude-pattern`, `-e`: 除外するファイルパターン（正規表現、複数指定可）
-- `--concurrent`, `-c`: 同時ダウンロード数（デフォルト: 10）
-- `--timeout`: タイムアウト（秒、デフォルト: 30）
-- `--rate-limit`: レート制限（秒、デフォルト: 0.1）
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: リポジトリ名）
 
 **使用例:**
 
 ```bash
-# 基本的な使用
-uv run python scripts/import_from_github.py https://github.com/google-gemini/cookbook/tree/main/examples
+# 基本的な使用（特定フォルダを取得）
+uv run python scripts/github_import.py https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs
 
-# Pythonファイルのみを取得
-uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/main/src \
-    --include-pattern ".*\.py$"
+# リポジトリ全体を取得
+uv run python scripts/github_import.py https://github.com/owner/repo
 
-# テストファイルを除外して取得
-uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/main \
-    --exclude-pattern ".*test.*" \
-    --exclude-pattern "__pycache__"
+# 別のブランチから取得
+uv run python scripts/github_import.py https://github.com/owner/repo/tree/develop/src
 
-# トークンを使用して高速化（環境変数でも可）
-export GITHUB_TOKEN=your_github_token
-uv run python scripts/import_from_github.py https://github.com/private/repo/tree/main/docs
+# カスタム出力ディレクトリを指定
+uv run python scripts/github_import.py https://github.com/owner/repo/tree/main/docs \
+    --output-dir my-docs
 ```
 
 インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
