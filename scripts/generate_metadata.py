@@ -1,143 +1,331 @@
 #!/usr/bin/env python3
 """
-メタデータとembeddings生成スクリプト
+メタデータとembeddings生成スクリプト（高速版）
 docs/内のすべてのドキュメントに対して1行説明とembeddingsを生成します
 """
 
 import os
 import json
+import asyncio
 from pathlib import Path
-from openai import OpenAI
+from typing import List, Dict, Tuple, Optional
+from concurrent.futures import ThreadPoolExecutor
+
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from tqdm import tqdm
 import numpy as np
 
 load_dotenv()
 
 
-def generate_description(doc_path: str, content: str, client: OpenAI) -> str:
-    """ドキュメントの1行説明を生成"""
+class MetadataGenerator:
+    def __init__(self, api_key: str, concurrent_requests: int = 10):
+        self.client = AsyncOpenAI(api_key=api_key)
+        self.concurrent_requests = concurrent_requests
+        self.semaphore = asyncio.Semaphore(concurrent_requests)
+
+    def get_context_from_path(self, doc_path: str) -> Dict[str, str]:
+        """ファイルパスからコンテキスト情報を抽出"""
+        parts = doc_path.split("/")
+
+        # プロジェクト/カテゴリを判定
+        if len(parts) >= 2 and parts[0] == "docs":
+            project = parts[1]  # mcp, uv, voice-api など
+
+            # サブカテゴリを取得
+            subcategory = ""
+            if len(parts) > 3:
+                subcategory = "/".join(parts[2:-1])
+            elif len(parts) == 3:
+                subcategory = "ルート"
+
+            filename = parts[-1]
+
+            # プロジェクトごとの説明
+            project_descriptions = {
+                "mcp": "Model Context Protocol",
+                "uv": "Python パッケージマネージャー uv",
+                "voice-api": "音声API",
+            }
+
+            return {
+                "project": project_descriptions.get(project, project),
+                "subcategory": subcategory,
+                "filename": filename,
+                "full_path": doc_path,
+            }
+
+        return {
+            "project": "不明",
+            "subcategory": "",
+            "filename": doc_path.split("/")[-1],
+            "full_path": doc_path,
+        }
+
+    async def generate_description(
+        self, doc_path: str, content: str, all_paths: List[str]
+    ) -> Tuple[str, str]:
+        """ドキュメントの1行説明を生成"""
+        async with self.semaphore:
+            try:
+                # ファイルタイプに応じた説明
+                if doc_path.endswith(".json"):
+                    context = self.get_context_from_path(doc_path)
+                    return (
+                        doc_path,
+                        f"{context['project']}の{context['subcategory']}セクションのJSONスキーマ定義",
+                    )
+                elif doc_path.endswith(".ts"):
+                    context = self.get_context_from_path(doc_path)
+                    return (
+                        doc_path,
+                        f"{context['project']}の{context['subcategory']}セクションのTypeScript型定義",
+                    )
+                elif doc_path.endswith((".yml", ".yaml")):
+                    context = self.get_context_from_path(doc_path)
+                    return (
+                        doc_path,
+                        f"{context['project']}の{context['subcategory']}セクションのYAML設定ファイル",
+                    )
+
+                # コンテキスト情報を取得
+                context = self.get_context_from_path(doc_path)
+
+                # 同じディレクトリ内の他のファイルを取得（構造理解のため）
+                dir_path = "/".join(doc_path.split("/")[:-1])
+                siblings = [
+                    p for p in all_paths if p.startswith(dir_path) and p != doc_path
+                ][:5]
+
+                # 内容から説明を生成
+                content_preview = content[:3000]
+
+                response = await self.client.chat.completions.create(
+                    model="gpt-4o-mini",  # より高速なモデルを使用
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """ドキュメントの内容とファイルパスから、そのドキュメントが全体の中でどのような役割を持つかを含めた、技術的に正確で簡潔な1行の日本語説明を生成してください。
+
+以下の観点を考慮してください：
+- どのプロジェクト/製品のドキュメントか
+- どのセクション/カテゴリに属するか
+- 何について説明しているか
+- 誰向けの情報か（開発者、ユーザーなど）
+
+説明は60文字程度で、全体の文脈における位置づけがわかるようにしてください。""",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""ファイルパス: {doc_path}
+プロジェクト: {context["project"]}
+カテゴリ: {context["subcategory"]}
+ファイル名: {context["filename"]}
+
+同じディレクトリの他のファイル:
+{chr(10).join(siblings)}
+
+内容の冒頭:
+{content_preview}""",
+                        },
+                    ],
+                    temperature=0.3,
+                    max_tokens=150,
+                )
+
+                description = (
+                    response.choices[0].message.content.strip().strip("\"'。.")
+                )
+                return doc_path, description
+
+            except Exception as e:
+                print(f"\nError generating description for {doc_path}: {e}")
+                return doc_path, "ドキュメント"
+
+    async def generate_embedding(
+        self, doc_path: str, content: str
+    ) -> Tuple[str, Optional[List[float]]]:
+        """テキストのembeddingを生成"""
+        async with self.semaphore:
+            try:
+                # text-embedding-3-largeのトークン制限を考慮（約8192トークン≒日本語なら約10000文字）
+                text = content[:10000].replace("\n", " ")
+                response = await self.client.embeddings.create(
+                    input=[text], model="text-embedding-3-large"
+                )
+                return doc_path, response.data[0].embedding
+
+            except Exception as e:
+                print(f"\nError generating embedding for {doc_path}: {e}")
+                return doc_path, None
+
+    async def process_files(
+        self,
+        files_data: List[Tuple[str, str]],
+        existing_metadata: Dict[str, str],
+        existing_embeddings: Dict[str, List[float]],
+    ) -> Tuple[Dict[str, str], Dict[str, List[float]]]:
+        """ファイルを並列処理"""
+        metadata_tasks = []
+        embedding_tasks = []
+
+        # 全ファイルパスのリスト（構造理解のため）
+        all_paths = [doc_path for doc_path, _ in files_data]
+
+        # メタデータとembeddingのタスクを作成
+        for doc_path, content in files_data:
+            if doc_path not in existing_metadata:
+                metadata_tasks.append(
+                    self.generate_description(doc_path, content, all_paths)
+                )
+
+            if doc_path not in existing_embeddings and len(content.strip()) > 0:
+                embedding_tasks.append(self.generate_embedding(doc_path, content))
+
+        new_metadata = {}
+        new_embeddings = {}
+
+        # メタデータを並列生成
+        if metadata_tasks:
+            print(f"\nGenerating descriptions for {len(metadata_tasks)} files...")
+            with tqdm(
+                total=len(metadata_tasks), desc="Descriptions", unit="files"
+            ) as pbar:
+                for coro in asyncio.as_completed(metadata_tasks):
+                    doc_path, description = await coro
+                    new_metadata[doc_path] = description
+                    pbar.update(1)
+                    pbar.set_postfix_str(f"{doc_path}: {description[:50]}...")
+
+        # Embeddingsを並列生成
+        if embedding_tasks:
+            print(f"\nGenerating embeddings for {len(embedding_tasks)} files...")
+            with tqdm(
+                total=len(embedding_tasks), desc="Embeddings", unit="files"
+            ) as pbar:
+                for coro in asyncio.as_completed(embedding_tasks):
+                    doc_path, embedding = await coro
+                    if embedding:
+                        new_embeddings[doc_path] = embedding
+                        pbar.update(1)
+                        pbar.set_postfix_str(f"{doc_path}")
+
+        return new_metadata, new_embeddings
+
+
+def read_file_safe(file_path: Path) -> Optional[str]:
+    """ファイルを安全に読み込む"""
     try:
-        # ファイルタイプに応じた説明
-        if doc_path.endswith('.json'):
-            return "JSONデータ定義"
-        elif doc_path.endswith('.ts'):
-            return "TypeScript型定義"
-        elif doc_path.endswith(('.yml', '.yaml')):
-            return "YAML設定ファイル"
-        
-        # 内容から説明を生成
-        content_preview = content[:3000]
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "MCPドキュメントの内容から、技術的に正確で簡潔な1行の日本語説明を生成してください。"
-                },
-                {
-                    "role": "user",
-                    "content": f"ファイル: {doc_path}\n\n内容:\n{content_preview}"
-                }
-            ],
-            temperature=0.3,
-            max_tokens=100
-        )
-        
-        return response.choices[0].message.content.strip().strip('"\'。.')
-        
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
     except Exception as e:
-        print(f"Error generating description for {doc_path}: {e}")
-        return "MCPドキュメント"
+        print(f"Error reading {file_path}: {e}")
+        return None
 
 
-def generate_embedding(content: str, client: OpenAI) -> list:
-    """テキストのembeddingを生成"""
-    # 最大50000文字まで
-    text = content[:50000].replace("\n", " ")
-    response = client.embeddings.create(
-        input=[text],
-        model="text-embedding-3-large"
-    )
-    return response.data[0].embedding
-
-
-def main():
-    # OpenAI クライアント初期化
+async def main():
+    # OpenAI APIキーチェック
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Error: OPENAI_API_KEY not set")
         return
-    
-    client = OpenAI(api_key=api_key)
-    
+
     # パス設定
     base_dir = Path(__file__).parent.parent
     docs_dir = base_dir / "docs"
     metadata_file = base_dir / "docs_metadata.json"
     embeddings_file = base_dir / "docs_embeddings.json"
-    
+
     # 既存のデータを読み込み
     metadata = {}
     embeddings = {}
-    
+
     if metadata_file.exists():
-        with open(metadata_file, 'r', encoding='utf-8') as f:
+        with open(metadata_file, "r", encoding="utf-8") as f:
             metadata = json.load(f)
-    
+        print(f"Loaded existing metadata: {len(metadata)} entries")
+
     if embeddings_file.exists():
-        with open(embeddings_file, 'r', encoding='utf-8') as f:
+        with open(embeddings_file, "r", encoding="utf-8") as f:
             embeddings = json.load(f)
-    
-    # docs内のすべてのテキストファイルを処理
-    metadata_updated = False
-    embeddings_updated = False
-    
+        print(f"Loaded existing embeddings: {len(embeddings)} entries")
+
+    # docs内のすべてのテキストファイルを収集
+    print("\nScanning for documents...")
+    files_data = []
+
     for file_path in docs_dir.rglob("*"):
-        if file_path.is_file() and file_path.suffix in ['.mdx', '.md', '.txt', '.json', '.ts', '.yml', '.yaml']:
-            doc_path = str(file_path.relative_to(base_dir)).replace('\\', '/')
-            
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # メタデータ生成（存在しない場合のみ）
-                if doc_path not in metadata:
-                    description = generate_description(doc_path, content, client)
-                    metadata[doc_path] = description
-                    metadata_updated = True
-                    print(f"Generated metadata: {doc_path} - {description}")
-                
-                # Embeddings生成（存在しない場合のみ）
-                if doc_path not in embeddings and len(content.strip()) > 0:
-                    print(f"Generating embedding: {doc_path}")
-                    embedding = generate_embedding(content, client)
-                    # リストをそのまま保存（JSONで保存可能）
-                    embeddings[doc_path] = embedding
-                    embeddings_updated = True
-                    print(f"Generated embedding: {doc_path} (dim: {len(embedding)})")
-                
-            except Exception as e:
-                print(f"Error processing {doc_path}: {e}")
-    
+        if file_path.is_file() and file_path.suffix in [
+            ".mdx",
+            ".md",
+            ".txt",
+            ".json",
+            ".ts",
+            ".yml",
+            ".yaml",
+        ]:
+            doc_path = str(file_path.relative_to(base_dir)).replace("\\", "/")
+
+            # ファイルを読み込み（並列読み込み用）
+            content = read_file_safe(file_path)
+            if content:
+                files_data.append((doc_path, content))
+
+    print(f"Found {len(files_data)} documents")
+
+    # 処理が必要なファイルをチェック
+    need_metadata = sum(1 for doc_path, _ in files_data if doc_path not in metadata)
+    need_embeddings = sum(
+        1
+        for doc_path, content in files_data
+        if doc_path not in embeddings and len(content.strip()) > 0
+    )
+
+    if need_metadata == 0 and need_embeddings == 0:
+        print("\nAll files are up to date. No processing needed.")
+        return
+
+    print(f"\nNeed to process:")
+    print(f"- Descriptions: {need_metadata} files")
+    print(f"- Embeddings: {need_embeddings} files")
+
+    # MetadataGeneratorを初期化
+    generator = MetadataGenerator(api_key, concurrent_requests=10)
+
+    # 並列処理
+    new_metadata, new_embeddings = await generator.process_files(
+        files_data, metadata, embeddings
+    )
+
+    # 新しいデータをマージ
+    metadata_updated = len(new_metadata) > 0
+    embeddings_updated = len(new_embeddings) > 0
+
+    if metadata_updated:
+        metadata.update(new_metadata)
+
+    if embeddings_updated:
+        embeddings.update(new_embeddings)
+
     # メタデータを保存
     if metadata_updated:
-        with open(metadata_file, 'w', encoding='utf-8') as f:
+        with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
         print(f"\nMetadata saved to {metadata_file}")
-    
+
     # Embeddingsを保存
     if embeddings_updated:
-        with open(embeddings_file, 'w', encoding='utf-8') as f:
+        with open(embeddings_file, "w", encoding="utf-8") as f:
             json.dump(embeddings, f, ensure_ascii=False)
         print(f"Embeddings saved to {embeddings_file}")
-    
-    if not metadata_updated and not embeddings_updated:
-        print("\nNo updates needed")
-    
-    print(f"\nTotal documents: {len(metadata)}")
-    print(f"Total embeddings: {len(embeddings)}")
+
+    print(f"\nSummary:")
+    print(f"- Total documents: {len(metadata)}")
+    print(f"- Total embeddings: {len(embeddings)}")
+    print(f"- New descriptions: {len(new_metadata)}")
+    print(f"- New embeddings: {len(new_embeddings)}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
