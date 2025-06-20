@@ -139,26 +139,43 @@ uv run pytest tests/
 
 ### URLからドキュメントをインポート
 
-WebサイトのドキュメントをMarkdown形式でインポートできます：
+WebサイトのドキュメントをMarkdown形式で高速にインポートできます。並列ダウンロード機能により、大量のページも効率的に取得可能です。
 
 ```bash
 uv run python scripts/import_from_url.py https://example.com/docs
 ```
 
-オプション:
+**主な特徴:**
+- 🚀 並列ダウンロード（デフォルト10並列）で高速化
+- 📊 プログレスバーでダウンロード・保存状況を可視化
+- 🌏 日本語URLを適切にデコードしてファイル名に変換
+- 🌲 URLのパス構造を維持したディレクトリツリーで保存
+
+**オプション:**
 - `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `docs/imported`）
 - `--depth`, `-d`: クロールの深さ（デフォルト: 2）
 - `--include-pattern`, `-i`: 含めるURLパターン（正規表現、複数指定可）
 - `--exclude-pattern`, `-e`: 除外するURLパターン（正規表現、複数指定可）
-- `--delay`: リクエスト間の遅延（秒、デフォルト: 0.5）
+- `--concurrent`, `-c`: 同時ダウンロード数（デフォルト: 10）
+- `--timeout`: タイムアウト（秒、デフォルト: 30）
+- `--rate-limit`: レート制限（秒、デフォルト: 0.1）
 
-例:
+**使用例:**
+
 ```bash
-# 特定のパスのみをインポート
+# 基本的な使用
+uv run python scripts/import_from_url.py https://mcp-jp.apidog.io/
+
+# 特定のパスのみを深さ3でインポート
 uv run python scripts/import_from_url.py https://docs.example.com \
     --depth 3 \
     --include-pattern "/api/.*" \
     --exclude-pattern ".*/deprecated/.*"
+
+# 同時接続数を増やして高速化（サーバーに優しく）
+uv run python scripts/import_from_url.py https://docs.example.com \
+    --concurrent 20 \
+    --rate-limit 0.05
 ```
 
 インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
