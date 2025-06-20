@@ -135,6 +135,34 @@ uv run python scripts/generate_metadata.py
 uv run pytest tests/
 ```
 
+## スクリプト
+
+### URLからドキュメントをインポート
+
+WebサイトのドキュメントをMarkdown形式でインポートできます：
+
+```bash
+uv run python scripts/import_from_url.py https://example.com/docs
+```
+
+オプション:
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `docs/imported`）
+- `--depth`, `-d`: クロールの深さ（デフォルト: 2）
+- `--include-pattern`, `-i`: 含めるURLパターン（正規表現、複数指定可）
+- `--exclude-pattern`, `-e`: 除外するURLパターン（正規表現、複数指定可）
+- `--delay`: リクエスト間の遅延（秒、デフォルト: 0.5）
+
+例:
+```bash
+# 特定のパスのみをインポート
+uv run python scripts/import_from_url.py https://docs.example.com \
+    --depth 3 \
+    --include-pattern "/api/.*" \
+    --exclude-pattern ".*/deprecated/.*"
+```
+
+インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
+
 ## 利用可能なMCPツール
 
 ### list_docs
