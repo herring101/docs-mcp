@@ -22,7 +22,7 @@ from tqdm import tqdm
 class URLImporter:
     def __init__(
         self,
-        output_dir: str = "docs/imported",
+        output_dir: str = "imported",
         max_depth: int = 2,
         include_patterns: Optional[List[str]] = None,
         exclude_patterns: Optional[List[str]] = None,
@@ -308,8 +308,8 @@ async def main():
     parser.add_argument('url', help='インポート元のURL')
     parser.add_argument(
         '--output-dir', '-o',
-        default='docs/imported',
-        help='出力先ディレクトリ (default: docs/imported)'
+        default='imported',
+        help='出力先ディレクトリ (default: imported)'
     )
     parser.add_argument(
         '--depth', '-d',

@@ -152,7 +152,7 @@ uv run python scripts/import_from_url.py https://example.com/docs
 - 🌲 URLのパス構造を維持したディレクトリツリーで保存
 
 **オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `docs/imported`）
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `imported`）
 - `--depth`, `-d`: クロールの深さ（デフォルト: 2）
 - `--include-pattern`, `-i`: 含めるURLパターン（正規表現、複数指定可）
 - `--exclude-pattern`, `-e`: 除外するURLパターン（正規表現、複数指定可）
@@ -195,7 +195,7 @@ uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/b
 - 🎯 ファイルパターンによるフィルタリング
 
 **オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `docs/github`）
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `github`）
 - `--token`, `-t`: GitHub Personal Access Token（環境変数`GITHUB_TOKEN`でも設定可）
 - `--include-pattern`, `-i`: 含めるファイルパターン（正規表現、複数指定可）
 - `--exclude-pattern`, `-e`: 除外するファイルパターン（正規表現、複数指定可）

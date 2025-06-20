@@ -19,7 +19,7 @@ from tqdm import tqdm
 class GitHubImporter:
     def __init__(
         self,
-        output_dir: str = "docs/github",
+        output_dir: str = "github",
         github_token: Optional[str] = None,
         concurrent_downloads: int = 10,
         timeout: int = 30,
@@ -253,8 +253,8 @@ async def main():
     parser.add_argument('url', help='GitHubリポジトリのURL（例: https://github.com/owner/repo/tree/main/path）')
     parser.add_argument(
         '--output-dir', '-o',
-        default='docs/github',
-        help='出力先ディレクトリ (default: docs/github)'
+        default='github',
+        help='出力先ディレクトリ (default: github)'
     )
     parser.add_argument(
         '--token', '-t',
