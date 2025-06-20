@@ -180,6 +180,51 @@ uv run python scripts/import_from_url.py https://docs.example.com \
 
 インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
 
+### GitHubリポジトリからインポート
+
+GitHubリポジトリの特定フォルダ以下のファイルをローカルに取得できます。
+
+```bash
+uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/branch/path
+```
+
+**主な特徴:**
+- 📁 指定したフォルダ以下を再帰的に取得
+- 🚀 並列ダウンロードで高速化
+- 🔑 GitHub Personal Access Token対応（レート制限回避）
+- 🎯 ファイルパターンによるフィルタリング
+
+**オプション:**
+- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: `docs/github`）
+- `--token`, `-t`: GitHub Personal Access Token（環境変数`GITHUB_TOKEN`でも設定可）
+- `--include-pattern`, `-i`: 含めるファイルパターン（正規表現、複数指定可）
+- `--exclude-pattern`, `-e`: 除外するファイルパターン（正規表現、複数指定可）
+- `--concurrent`, `-c`: 同時ダウンロード数（デフォルト: 10）
+- `--timeout`: タイムアウト（秒、デフォルト: 30）
+- `--rate-limit`: レート制限（秒、デフォルト: 0.1）
+
+**使用例:**
+
+```bash
+# 基本的な使用
+uv run python scripts/import_from_github.py https://github.com/google-gemini/cookbook/tree/main/examples
+
+# Pythonファイルのみを取得
+uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/main/src \
+    --include-pattern ".*\.py$"
+
+# テストファイルを除外して取得
+uv run python scripts/import_from_github.py https://github.com/owner/repo/tree/main \
+    --exclude-pattern ".*test.*" \
+    --exclude-pattern "__pycache__"
+
+# トークンを使用して高速化（環境変数でも可）
+export GITHUB_TOKEN=your_github_token
+uv run python scripts/import_from_github.py https://github.com/private/repo/tree/main/docs
+```
+
+インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
+
 ## 利用可能なMCPツール
 
 ### list_docs
