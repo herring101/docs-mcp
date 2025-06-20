@@ -29,15 +29,15 @@ class MetadataGenerator:
         """ファイルパスからコンテキスト情報を抽出"""
         parts = doc_path.split("/")
 
-        # プロジェクト/カテゴリを判定
-        if len(parts) >= 2 and parts[0] == "docs":
-            project = parts[1]  # mcp, uv, voice-api など
+        # プロジェクト/カテゴリを判定（docs/プレフィックスなし）
+        if len(parts) >= 1:
+            project = parts[0]  # mcp, uv, voice-api など
 
             # サブカテゴリを取得
             subcategory = ""
-            if len(parts) > 3:
-                subcategory = "/".join(parts[2:-1])
-            elif len(parts) == 3:
+            if len(parts) > 2:
+                subcategory = "/".join(parts[1:-1])
+            elif len(parts) == 2:
                 subcategory = "ルート"
 
             filename = parts[-1]
@@ -265,7 +265,8 @@ async def main():
             ".yml",
             ".yaml",
         ]:
-            doc_path = str(file_path.relative_to(base_dir)).replace("\\", "/")
+            # docs/プレフィックスを除去
+            doc_path = str(file_path.relative_to(docs_dir)).replace("\\", "/")
 
             # ファイルを読み込み（並列読み込み用）
             content = read_file_safe(file_path)

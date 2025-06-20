@@ -58,7 +58,8 @@ class DocumentManager:
         """特定のフォルダ内のファイルを読み込む"""
         for file_path in folder_path.rglob("*"):
             if file_path.is_file() and file_path.suffix in ['.mdx', '.md', '.txt', '.json', '.ts', '.yml', '.yaml']:
-                doc_path = str(file_path.relative_to(self.base_dir)).replace('\\', '/')
+                # docs/プレフィックスを除去
+                doc_path = str(file_path.relative_to(self.docs_dir)).replace('\\', '/')
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
@@ -70,7 +71,8 @@ class DocumentManager:
         """docs内のすべてのテキストファイルを読み込む"""
         for file_path in self.docs_dir.rglob("*"):
             if file_path.is_file() and file_path.suffix in ['.mdx', '.md', '.txt', '.json', '.ts', '.yml', '.yaml']:
-                doc_path = str(file_path.relative_to(self.base_dir)).replace('\\', '/')
+                # docs/プレフィックスを除去
+                doc_path = str(file_path.relative_to(self.docs_dir)).replace('\\', '/')
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()

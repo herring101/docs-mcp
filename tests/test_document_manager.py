@@ -48,10 +48,10 @@ class TestDocumentManager:
         
         # 全てのファイルが読み込まれているか確認
         assert len(manager.docs_content) == 4
-        assert "docs/docs1/test1.md" in manager.docs_content
-        assert "docs/docs1/test2.mdx" in manager.docs_content
-        assert "docs/docs2/config.json" in manager.docs_content
-        assert "docs/docs3/guide.md" in manager.docs_content
+        assert "docs1/test1.md" in manager.docs_content
+        assert "docs1/test2.mdx" in manager.docs_content
+        assert "docs2/config.json" in manager.docs_content
+        assert "docs3/guide.md" in manager.docs_content
     
     def test_load_specific_folders(self):
         """特定フォルダのみを読み込むテスト"""
@@ -63,11 +63,11 @@ class TestDocumentManager:
         
         # 指定したフォルダのファイルのみが読み込まれているか確認
         assert len(manager.docs_content) == 3
-        assert "docs/docs1/test1.md" in manager.docs_content
-        assert "docs/docs1/test2.mdx" in manager.docs_content
-        assert "docs/docs3/guide.md" in manager.docs_content
+        assert "docs1/test1.md" in manager.docs_content
+        assert "docs1/test2.mdx" in manager.docs_content
+        assert "docs3/guide.md" in manager.docs_content
         # docs2のファイルは読み込まれていないはず
-        assert "docs/docs2/config.json" not in manager.docs_content
+        assert "docs2/config.json" not in manager.docs_content
     
     def test_load_single_folder(self):
         """単一フォルダのみを読み込むテスト"""
@@ -79,7 +79,7 @@ class TestDocumentManager:
         
         # docs2のファイルのみが読み込まれているか確認
         assert len(manager.docs_content) == 1
-        assert "docs/docs2/config.json" in manager.docs_content
+        assert "docs2/config.json" in manager.docs_content
     
     def test_load_nonexistent_folder(self, capsys):
         """存在しないフォルダを指定した場合のテスト"""
@@ -104,9 +104,9 @@ class TestDocumentManager:
         manager.load_documents()
         
         # 存在するドキュメントを取得
-        content = manager.get_document("docs/docs1/test1.md")
+        content = manager.get_document("docs1/test1.md")
         assert "# Test Document 1" in content
         
         # 存在しないドキュメントを取得
-        error = manager.get_document("docs/nonexistent.md")
+        error = manager.get_document("nonexistent.md")
         assert "Error: Document not found" in error
