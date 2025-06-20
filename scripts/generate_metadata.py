@@ -308,16 +308,18 @@ async def main():
     if embeddings_updated:
         embeddings.update(new_embeddings)
 
-    # メタデータを保存
+    # メタデータを保存（ソート済み）
     if metadata_updated:
         with open(metadata_file, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, ensure_ascii=False, indent=2)
+            sorted_metadata = dict(sorted(metadata.items()))
+            json.dump(sorted_metadata, f, ensure_ascii=False, indent=2)
         print(f"\nMetadata saved to {metadata_file}")
 
-    # Embeddingsを保存
+    # Embeddingsを保存（ソート済み）
     if embeddings_updated:
         with open(embeddings_file, "w", encoding="utf-8") as f:
-            json.dump(embeddings, f, ensure_ascii=False)
+            sorted_embeddings = dict(sorted(embeddings.items()))
+            json.dump(sorted_embeddings, f, ensure_ascii=False)
         print(f"Embeddings saved to {embeddings_file}")
 
     print(f"\nSummary:")
