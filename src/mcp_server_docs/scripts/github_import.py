@@ -39,7 +39,7 @@ def parse_github_url(url: str) -> tuple[str, str, str, str]:
     return owner, repo, branch, path
 
 
-def run_command(cmd: list[str], cwd: str = None) -> subprocess.CompletedProcess:
+def run_command(cmd: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
     """コマンドを実行"""
     result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -51,7 +51,7 @@ def run_command(cmd: list[str], cwd: str = None) -> subprocess.CompletedProcess:
     return result
 
 
-def import_with_sparse_checkout(url: str, output_dir: str = None):
+def import_with_sparse_checkout(url: str, output_dir: str | None = None):
     """sparse-checkoutを使用して特定のディレクトリのみをクローン"""
     owner, repo, branch, target_path = parse_github_url(url)
 

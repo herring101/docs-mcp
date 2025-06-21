@@ -276,6 +276,8 @@ class DocumentManager:
     def _get_embedding(self, text: str) -> list[float]:
         """テキストのembeddingを取得"""
         text = text.replace("\n", " ")
+        if self.client is None:
+            raise ValueError("OpenAI client not initialized")
         response = self.client.embeddings.create(
             input=[text], model="text-embedding-3-large"
         )
@@ -283,9 +285,9 @@ class DocumentManager:
 
     def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """コサイン類似度を計算"""
-        vec1 = np.array(vec1)
-        vec2 = np.array(vec2)
-        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+        v1 = np.array(vec1)
+        v2 = np.array(vec2)
+        return float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
     def _extract_preview(self, content: str, query: str, max_length: int = 200) -> str:
         """クエリに関連する部分を抽出"""

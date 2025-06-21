@@ -21,7 +21,7 @@ from tqdm import tqdm
 class URLImporter:
     def __init__(
         self,
-        output_dir: str = None,
+        output_dir: str | None = None,
         max_depth: int = 2,
         include_patterns: list[str] | None = None,
         exclude_patterns: list[str] | None = None,
@@ -58,8 +58,12 @@ class URLImporter:
 
     async def fetch_page(self, url: str) -> tuple[str | None, list[str]]:
         """ページを非同期で取得してMarkdownに変換"""
+        if self.semaphore is None:
+            raise ValueError("Semaphore not initialized")
         async with self.semaphore:
             try:
+                if self.session is None:
+                    raise ValueError("Session not initialized")
                 async with self.session.get(url) as response:
                     response.raise_for_status()
                     html_content = await response.text()
@@ -68,9 +72,11 @@ class URLImporter:
                     soup = BeautifulSoup(html_content, "html.parser")
                     links = []
                     for link in soup.find_all("a", href=True):
-                        href = link["href"]
-                        absolute_url = urljoin(url, href)
-                        links.append(absolute_url)
+                        # BeautifulSoupのTagオブジェクトのみ処理
+                        href = link.get("href", "")  # type: ignore
+                        if href:
+                            absolute_url = urljoin(url, str(href))
+                            links.append(absolute_url)
 
                     # HTMLをMarkdownに変換
                     markdown = self.html_to_markdown(html_content)
@@ -149,6 +155,8 @@ class URLImporter:
         docs_base_dir = os.getenv("DOCS_BASE_DIR", os.getcwd())
         base_dir = Path(docs_base_dir)
         docs_dir = base_dir / "docs"
+        if self.output_dir is None:
+            return str(docs_dir / path)
         return str(docs_dir / self.output_dir / path)
 
     def filter_links(self, links: list[str], base_url: str) -> list[str]:
@@ -260,7 +268,10 @@ class URLImporter:
         docs_base_dir = os.getenv("DOCS_BASE_DIR", os.getcwd())
         base_dir = Path(docs_base_dir)
         docs_dir = base_dir / "docs"
-        actual_output_dir = docs_dir / self.output_dir
+        if self.output_dir is None:
+            actual_output_dir = docs_dir
+        else:
+            actual_output_dir = docs_dir / self.output_dir
         print(f"Output directory: {actual_output_dir}")
         print(f"Max depth: {self.max_depth}")
         print(f"Concurrent downloads: {self.concurrent_downloads}")
@@ -328,7 +339,10 @@ class URLImporter:
         docs_base_dir = os.getenv("DOCS_BASE_DIR", os.getcwd())
         base_dir = Path(docs_base_dir)
         docs_dir = base_dir / "docs"
-        actual_output_dir = docs_dir / self.output_dir
+        if self.output_dir is None:
+            actual_output_dir = docs_dir
+        else:
+            actual_output_dir = docs_dir / self.output_dir
         print(f"\nImport completed! {len(pages)} pages saved to {actual_output_dir}")
 
 

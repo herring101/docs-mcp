@@ -60,7 +60,7 @@ build-backend = "hatchling.build"
 packages = ["src/mcp_server_docs"]
 
 [tool.pyright]
-include = ["src", "tests", "scripts"]
+include = ["src", "tests"]
 venvPath = "."
 venv = ".venv"
 

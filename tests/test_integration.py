@@ -193,11 +193,8 @@ class TestIntegration:
         docs_folders_env = ""
         allowed_folders = None
         if docs_folders_env:
-            allowed_folders = [
-                folder.strip()
-                for folder in docs_folders_env.split(",")
-                if folder.strip()
-            ]
+            # この部分は空文字列なので実行されない
+            pass
         assert allowed_folders is None
 
         # ケース3: 空白を含む

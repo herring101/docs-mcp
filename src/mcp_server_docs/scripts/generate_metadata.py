@@ -206,9 +206,11 @@ class MetadataGenerator:
                     max_tokens=150,
                 )
 
-                description = (
-                    response.choices[0].message.content.strip().strip("\"'。.")
-                )
+                message_content = response.choices[0].message.content
+                if message_content is None:
+                    description = "ドキュメント"
+                else:
+                    description = message_content.strip().strip("\"'。.")
                 return doc_path, description
 
             except Exception as e:
