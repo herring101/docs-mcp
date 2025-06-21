@@ -4,39 +4,90 @@
 docs/内のすべてのドキュメントに対して1行説明とembeddingsを生成します
 """
 
-import os
-import json
 import asyncio
+import json
+import os
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
-from concurrent.futures import ThreadPoolExecutor
 
-from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from tqdm import tqdm
-import numpy as np
 
 load_dotenv()
 
 # デフォルトで対応するファイル拡張子（DocumentManagerと同じ）
 DEFAULT_EXTENSIONS = [
     # ドキュメント系
-    '.md', '.mdx', '.txt', '.rst', '.asciidoc', '.org',
+    ".md",
+    ".mdx",
+    ".txt",
+    ".rst",
+    ".asciidoc",
+    ".org",
     # データ・設定系
-    '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.xml', '.csv',
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".xml",
+    ".csv",
     # プログラミング言語
-    '.py', '.js', '.jsx', '.ts', '.tsx', '.java', '.cpp', '.c', '.h', '.hpp',
-    '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.r', '.m',
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".java",
+    ".cpp",
+    ".c",
+    ".h",
+    ".hpp",
+    ".cs",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".scala",
+    ".r",
+    ".m",
     # スクリプト・シェル
-    '.sh', '.bash', '.zsh', '.fish', '.ps1', '.bat', '.cmd',
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".fish",
+    ".ps1",
+    ".bat",
+    ".cmd",
     # Web系
-    '.html', '.htm', '.css', '.scss', '.sass', '.less',
-    '.vue', '.svelte', '.astro',
+    ".html",
+    ".htm",
+    ".css",
+    ".scss",
+    ".sass",
+    ".less",
+    ".vue",
+    ".svelte",
+    ".astro",
     # 設定・ビルド系
-    '.dockerfile', '.dockerignore', '.gitignore', '.env', '.env.example',
-    '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc',
+    ".dockerfile",
+    ".dockerignore",
+    ".gitignore",
+    ".env",
+    ".env.example",
+    ".editorconfig",
+    ".prettierrc",
+    ".eslintrc",
+    ".babelrc",
     # その他
-    '.sql', '.graphql', '.proto', '.ipynb'
+    ".sql",
+    ".graphql",
+    ".proto",
+    ".ipynb",
 ]
 
 
@@ -46,7 +97,7 @@ class MetadataGenerator:
         self.concurrent_requests = concurrent_requests
         self.semaphore = asyncio.Semaphore(concurrent_requests)
 
-    def get_context_from_path(self, doc_path: str) -> Dict[str, str]:
+    def get_context_from_path(self, doc_path: str) -> dict[str, str]:
         """ファイルパスからコンテキスト情報を抽出"""
         parts = doc_path.split("/")
 
@@ -85,8 +136,8 @@ class MetadataGenerator:
         }
 
     async def generate_description(
-        self, doc_path: str, content: str, all_paths: List[str]
-    ) -> Tuple[str, str]:
+        self, doc_path: str, content: str, all_paths: list[str]
+    ) -> tuple[str, str]:
         """ドキュメントの1行説明を生成"""
         async with self.semaphore:
             try:
@@ -166,7 +217,7 @@ class MetadataGenerator:
 
     async def generate_embedding(
         self, doc_path: str, content: str
-    ) -> Tuple[str, Optional[List[float]]]:
+    ) -> tuple[str, list[float] | None]:
         """テキストのembeddingを生成"""
         async with self.semaphore:
             try:
@@ -183,10 +234,10 @@ class MetadataGenerator:
 
     async def process_files(
         self,
-        files_data: List[Tuple[str, str]],
-        existing_metadata: Dict[str, str],
-        existing_embeddings: Dict[str, List[float]],
-    ) -> Tuple[Dict[str, str], Dict[str, List[float]]]:
+        files_data: list[tuple[str, str]],
+        existing_metadata: dict[str, str],
+        existing_embeddings: dict[str, list[float]],
+    ) -> tuple[dict[str, str], dict[str, list[float]]]:
         """ファイルを並列処理"""
         metadata_tasks = []
         embedding_tasks = []
@@ -235,10 +286,10 @@ class MetadataGenerator:
         return new_metadata, new_embeddings
 
 
-def read_file_safe(file_path: Path) -> Optional[str]:
+def read_file_safe(file_path: Path) -> str | None:
     """ファイルを安全に読み込む"""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         print(f"Error reading {file_path}: {e}")
@@ -253,7 +304,9 @@ async def main():
         return
 
     # パス設定
-    base_dir = Path(__file__).parent.parent
+    # DOCS_BASE_DIRが設定されていればそれを使用、なければ現在のディレクトリ
+    docs_base_dir = os.getenv("DOCS_BASE_DIR", os.getcwd())
+    base_dir = Path(docs_base_dir)
     docs_dir = base_dir / "docs"
     metadata_file = base_dir / "docs_metadata.json"
     embeddings_file = base_dir / "docs_embeddings.json"
@@ -263,12 +316,12 @@ async def main():
     embeddings = {}
 
     if metadata_file.exists():
-        with open(metadata_file, "r", encoding="utf-8") as f:
+        with open(metadata_file, encoding="utf-8") as f:
             metadata = json.load(f)
         print(f"Loaded existing metadata: {len(metadata)} entries")
 
     if embeddings_file.exists():
-        with open(embeddings_file, "r", encoding="utf-8") as f:
+        with open(embeddings_file, encoding="utf-8") as f:
             embeddings = json.load(f)
         print(f"Loaded existing embeddings: {len(embeddings)} entries")
 
@@ -276,14 +329,18 @@ async def main():
     extensions_env = os.getenv("DOCS_FILE_EXTENSIONS")
     if extensions_env:
         # 環境変数が設定されている場合は、それを使用（カンマ区切り）
-        allowed_extensions = [ext.strip() for ext in extensions_env.split(",") if ext.strip()]
+        allowed_extensions = [
+            ext.strip() for ext in extensions_env.split(",") if ext.strip()
+        ]
         # ドットがない場合は追加
-        allowed_extensions = [ext if ext.startswith('.') else f'.{ext}' for ext in allowed_extensions]
+        allowed_extensions = [
+            ext if ext.startswith(".") else f".{ext}" for ext in allowed_extensions
+        ]
         print(f"Using custom file extensions: {', '.join(allowed_extensions)}")
     else:
         # デフォルトの拡張子を使用
         allowed_extensions = DEFAULT_EXTENSIONS
-    
+
     # docs内のすべてのテキストファイルを収集
     print("\nScanning for documents...")
     files_data = []
@@ -302,14 +359,16 @@ async def main():
 
     # 現在存在するファイルのパスセット
     existing_files = {doc_path for doc_path, _ in files_data}
-    
+
     # 削除されたファイルをチェック
-    deleted_from_metadata = [path for path in metadata.keys() if path not in existing_files]
-    deleted_from_embeddings = [path for path in embeddings.keys() if path not in existing_files]
-    
+    deleted_from_metadata = [path for path in metadata if path not in existing_files]
+    deleted_from_embeddings = [
+        path for path in embeddings if path not in existing_files
+    ]
+
     # 削除されたファイルの情報を削除
     if deleted_from_metadata or deleted_from_embeddings:
-        print(f"\nCleaning up deleted files...")
+        print("\nCleaning up deleted files...")
         if deleted_from_metadata:
             print(f"- Removing {len(deleted_from_metadata)} entries from metadata")
             for path in deleted_from_metadata:
@@ -327,11 +386,16 @@ async def main():
         if doc_path not in embeddings and len(content.strip()) > 0
     )
 
-    if need_metadata == 0 and need_embeddings == 0 and not deleted_from_metadata and not deleted_from_embeddings:
+    if (
+        need_metadata == 0
+        and need_embeddings == 0
+        and not deleted_from_metadata
+        and not deleted_from_embeddings
+    ):
         print("\nAll files are up to date. No processing needed.")
         return
 
-    print(f"\nNeed to process:")
+    print("\nNeed to process:")
     print(f"- Descriptions: {need_metadata} files")
     print(f"- Embeddings: {need_embeddings} files")
 
@@ -367,7 +431,7 @@ async def main():
             json.dump(sorted_embeddings, f, ensure_ascii=False)
         print(f"Embeddings saved to {embeddings_file}")
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"- Total documents: {len(metadata)}")
     print(f"- Total embeddings: {len(embeddings)}")
     print(f"- New descriptions: {len(new_metadata)}")
@@ -378,5 +442,10 @@ async def main():
         print(f"- Removed embeddings: {len(deleted_from_embeddings)}")
 
 
-if __name__ == "__main__":
+def cli():
+    """CLI entry point for PyPI installation."""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    cli()
