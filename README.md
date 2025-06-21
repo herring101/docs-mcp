@@ -5,6 +5,39 @@
 
 ユーザーが設定したドキュメントを効率的に検索・参照できるMCPサーバーです。
 
+## 前提条件
+
+docs-mcpを使用するには[uv](https://docs.astral.sh/uv/)が必要です。uvはPythonパッケージとプロジェクト管理のための高速なツールです。
+
+### uvのインストール
+
+<details>
+<summary>お使いのOSに合わせて選択してください</summary>
+
+#### macOS/Linux
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### Windows
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+#### Homebrew (macOS)
+```bash
+brew install uv
+```
+
+#### pipでのインストール
+```bash
+pip install uv
+```
+
+</details>
+
+詳細は[uvのインストールガイド](https://docs.astral.sh/uv/getting-started/installation/)を参照してください。
+
 ## 主な機能
 
 - 📄 **ドキュメント一覧表示** - すべてのドキュメントとその説明を一覧表示
@@ -102,7 +135,8 @@ docs-mcp-generate-metadata
 
 ## 必要な環境
 
-- Python 3.12以上（サーバー実行用）
+- [uv](https://docs.astral.sh/uv/) - Python環境とパッケージ管理ツール（`uvx`コマンドで実行）
+- Python 3.12以上（uvが自動的に管理）
 - OpenAI APIキー（セマンティック検索を使用する場合のみ）
 
 ## 詳細設定
