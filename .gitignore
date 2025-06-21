@@ -6,11 +6,65 @@ dist/
 wheels/
 *.egg-info
 .pytest_cache/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
 
 # Virtual environments
 .venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# other
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
 .env
+.env.local
 docs
 .mcp.json
+docs_embeddings.json
+docs_metadata.json
+
+# uv
+.python-version
+
+# Ruff
+.ruff_cache/
+
+# Testing
+htmlcov/
+.hypothesis/
