@@ -66,6 +66,25 @@ docs-mcp-generate-metadata
 # 5. Claude Desktopの設定は方法1と同じ
 ```
 
+#### 詳細な設定例（環境変数をフル活用）
+
+```json
+{
+  "mcpServers": {
+    "docs": {
+      "command": "uvx",
+      "args": ["docs-mcp"],
+      "env": {
+        "DOCS_BASE_DIR": "/path/to/my-project",
+        "OPENAI_API_KEY": "sk-...",  // セマンティック検索を有効化
+        "DOCS_FOLDERS": "api,guides,examples",  // 特定のフォルダのみ読み込み
+        "DOCS_FILE_EXTENSIONS": ".md,.mdx,.txt,.py"  // 対象ファイル拡張子を制限
+      }
+    }
+  }
+}
+```
+
 ## 利用可能なツール
 
 ### 基本ツール（方法1でも利用可能）
