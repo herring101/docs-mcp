@@ -1,273 +1,213 @@
 # docs-mcp
 
+[![Test](https://github.com/herring101/docs-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/herring101/docs-mcp/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ユーザーが設定したドキュメントを効率的に検索・参照できるMCPサーバーです。
 
 ## 主な機能
 
 - 📄 **ドキュメント一覧表示** - すべてのドキュメントとその説明を一覧表示
 - 🔍 **grep検索** - 正規表現を使った高速な全文検索
-- 🧠 **セマンティック検索** - OpenAI Embeddingsを使った意味的な類似検索
+- 🧠 **セマンティック検索** - OpenAI Embeddingsを使った意味的な類似検索（要設定）
 - 📝 **ドキュメント取得** - 指定したドキュメントの全内容を取得
+
+## 使い方は2種類
+
+### 🚀 方法1: シンプルに使う（セマンティック検索なし）
+
+```bash
+# 1. プロジェクトを作成してドキュメントを配置
+mkdir my-project
+cd my-project
+mkdir docs
+# docs/にドキュメントを配置
+
+# 2. Claude Desktopの設定に追加
+```
+
+Claude Desktop設定（`claude_desktop_config.json`）:
+```json
+{
+  "mcpServers": {
+    "docs": {
+      "command": "uvx",
+      "args": ["docs-mcp"],
+      "env": {
+        "DOCS_BASE_DIR": "/path/to/my-project"
+      }
+    }
+  }
+}
+```
+
+これだけで使えます！ただし、セマンティック検索は利用できません。
+
+### 🎯 方法2: フル機能で使う（セマンティック検索あり）
+
+```bash
+# 1. インストール
+pip install docs-mcp
+
+# 2. プロジェクトを作成
+mkdir my-project
+cd my-project
+mkdir docs
+
+# 3. ドキュメントをインポート（オプション）
+docs-mcp-import-url https://docs.example.com
+# または
+docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
+
+# 4. メタデータを生成（セマンティック検索用）
+export OPENAI_API_KEY="your-key"
+docs-mcp-generate-metadata
+
+# 5. Claude Desktopの設定は方法1と同じ
+```
+
+## 利用可能なツール
+
+### 基本ツール（方法1でも利用可能）
+- `list_docs` - ドキュメント一覧表示
+- `get_doc` - ドキュメント内容取得  
+- `grep_docs` - 正規表現検索
+
+### 追加ツール（方法2で利用可能）
+- `semantic_search` - 意味的な類似検索（要メタデータ生成）
+
+### コマンドラインツール（方法2で利用可能）
+- `docs-mcp-import-url` - Webサイトからドキュメントをインポート
+- `docs-mcp-import-github` - GitHubリポジトリからインポート
+- `docs-mcp-generate-metadata` - 検索用メタデータを生成
 
 ## 必要な環境
 
-- uv （install方法は[こちら](https://docs.astral.sh/uv/getting-started/installation/)）
-- OpenAI APIキー（セマンティック検索を使用する場合）
+- Python 3.12以上（サーバー実行用）
+- OpenAI APIキー（セマンティック検索を使用する場合のみ）
 
-## インストール
+## 詳細設定
+
+### 環境変数
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `OPENAI_API_KEY` | OpenAI APIキー（セマンティック検索用） | なし |
+| `DOCS_BASE_DIR` | ドキュメントプロジェクトのルート | 現在のディレクトリ |
+| `DOCS_FOLDERS` | 読み込むフォルダ（カンマ区切り） | `docs/`内の全フォルダ |
+| `DOCS_FILE_EXTENSIONS` | 対象ファイル拡張子 | デフォルトの拡張子リスト |
+
+### サポートされるファイル形式
+
+<details>
+<summary>クリックして展開</summary>
+
+- **ドキュメント**: `.md`, `.mdx`, `.txt`, `.rst`, `.asciidoc`, `.org`
+- **設定**: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.conf`, `.xml`, `.csv`
+- **コード**: `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.java`, `.cpp`, `.c`, `.h`, `.go`, `.rs`, `.rb`, `.php`
+- **スクリプト**: `.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`
+- **Web**: `.html`, `.css`, `.scss`, `.vue`, `.svelte`
+- **その他**: `.sql`, `.graphql`, `.proto`, `.ipynb`, `.dockerfile`, `.gitignore`
+
+</details>
+
+### ディレクトリ構造の例
+
+```
+my-project/
+└── docs/
+    ├── api/
+    │   └── reference.md
+    ├── guides/
+    │   └── quickstart.md
+    └── examples/
+        └── sample.py
+```
+## 開発者向け情報
+
+### ソースからの開発
 
 ```bash
 git clone https://github.com/herring101/docs-mcp.git
 cd docs-mcp
 uv sync
-```
 
-## セットアップ
-
-### 1. 環境変数を設定
-
-```bash
-cp .env.example .env
-# .envファイルを編集してOpenAI APIキーを設定
-```
-
-### 2. ドキュメントを配置
-
-`docs/`ディレクトリにドキュメントを配置します。デフォルトでは、以下の拡張子のファイルが読み込まれます：
-
-- **ドキュメント系**: `.md`, `.mdx`, `.txt`, `.rst`, `.asciidoc`, `.org`
-- **設定・データ系**: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.cfg`, `.conf`, `.xml`, `.csv`
-- **プログラミング言語**: `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.java`, `.cpp`, `.c`, `.h`, `.go`, `.rs`, `.rb`, `.php` など
-- **スクリプト**: `.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`
-- **Web系**: `.html`, `.css`, `.scss`, `.vue`, `.svelte`
-- **その他**: `.sql`, `.graphql`, `.proto`, `.ipynb`, `.dockerfile`, `.gitignore` など
-
-例 （docs以下のフォルダ名はなんでもOKです。）
-```
-docs-mcp/
-└── docs/
-    ├── project1/
-    │   ├── README.md
-    │   ├── main.py
-    │   └── config.yaml
-    ├── project2/
-    │   ├── index.js
-    │   ├── styles.css
-    │   └── package.json
-    └── project3/
-        ├── api.graphql
-        └── docker-compose.yml
-```
-
-### 3. メタデータを生成（推奨）
-
-```bash
-uv run python scripts/generate_metadata.py
-```
-
-これにより以下のファイルが生成されます：
-- `docs_metadata.json` - 各ドキュメントの1行説明
-- `docs_embeddings.json` - セマンティック検索用のベクトルデータ
-
-**注意**: このステップをスキップした場合：
-- `list_docs`コマンドはファイルパスのみを表示します（説明文なし）
-- `semantic_search`コマンドは使用できません
-
-新しいドキュメントを追加した場合も同じコマンドを実行してください。
-
-## MCPの設定json例
-
-### 基本設定（すべてのドキュメントを読み込む）
-
-```json
-{
-    "mcpServers": {
-        "docs-mcp": {
-            "command": "uv",
-            "args": [
-                "run",
-                "--directory",
-                "{path/to}/docs-mcp/src",
-                "docs_mcp.py"
-            ],
-            "env": {
-                "OPENAI_API_KEY": "your-openai-api-key"
-            }
-        }
-    }
-}
-```
-
-### フォルダを指定して読み込む
-
-環境変数`DOCS_FOLDERS`を使用して、特定のフォルダのみを読み込むことができます：
-
-```json
-{
-    "mcpServers": {
-        "docs-mcp-project1": {
-            "command": "uv",
-            "args": [
-                "run",
-                "--directory",
-                "{path/to}/docs-mcp/src",
-                "docs_mcp.py"
-            ],
-            "env": {
-                "OPENAI_API_KEY": "your-openai-api-key",
-                "DOCS_FOLDERS": "docs1,docs3"  // docs1とdocs3のみを読み込む
-            }
-        },
-        "docs-mcp-project2": {
-            "command": "uv",
-            "args": [
-                "run",
-                "--directory",
-                "{path/to}/docs-mcp/src",
-                "docs_mcp.py"
-            ],
-            "env": {
-                "OPENAI_API_KEY": "your-openai-api-key",
-                "DOCS_FOLDERS": "docs2"  // docs2のみを読み込む
-            }
-        }
-    }
-}
-```
-
-複数のプロジェクトを管理する場合、異なるサーバー名で複数の設定を作成できます。
-
-### カスタムファイル拡張子の設定
-
-デフォルトで多くのファイル形式に対応していますが、特定の拡張子のみを対象にしたい場合は、環境変数`DOCS_FILE_EXTENSIONS`で指定できます：
-
-```json
-{
-    "mcpServers": {
-        "docs-mcp-custom": {
-            "command": "uv",
-            "args": [
-                "run",
-                "--directory",
-                "{path/to}/docs-mcp/src",
-                "docs_mcp.py"
-            ],
-            "env": {
-                "OPENAI_API_KEY": "your-openai-api-key",
-                "DOCS_FILE_EXTENSIONS": ".md,.mdx,.py,.js"  // 特定の拡張子のみ
-            }
-        }
-    }
-}
-```
-
-拡張子はカンマ区切りで指定し、ドット（.）は省略可能です。この設定は`generate_metadata.py`スクリプトでも同様に機能します。
-
-## テスト
-
-テストを実行するには：
-
-```bash
+# テスト
 uv run pytest tests/
+
+# ビルド
+uv build
 ```
 
-## スクリプト
+### コマンドラインツールの詳細
 
-### URLからドキュメントをインポート
+<details>
+<summary>クリックして展開</summary>
 
-WebサイトのドキュメントをMarkdown形式で高速にインポートできます。並列ダウンロード機能により、大量のページも効率的に取得可能です。
+#### docs-mcp-import-url
+
+Webサイトからドキュメントをインポート
 
 ```bash
-uv run python scripts/url_import.py https://example.com/docs
+docs-mcp-import-url https://example.com/docs --output-dir docs/imported
 ```
 
-**主な特徴:**
-- 🚀 並列ダウンロード（デフォルト10並列）で高速化
-- 📊 プログレスバーでダウンロード・保存状況を可視化
-- 🌏 日本語URLを適切にデコードしてファイル名に変換
-- 🌲 URLのパス構造を維持したディレクトリツリーで保存
+オプション:
+- `--output-dir`, `-o`: 出力ディレクトリ
+- `--depth`, `-d`: クロール深度
+- `--include-pattern`, `-i`: 含めるURLパターン
+- `--exclude-pattern`, `-e`: 除外するURLパターン
+- `--concurrent`, `-c`: 同時ダウンロード数
 
-**オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: ドメイン名）
-- `--depth`, `-d`: クロールの深さ（デフォルト: 2）
-- `--include-pattern`, `-i`: 含めるURLパターン（正規表現、複数指定可）
-- `--exclude-pattern`, `-e`: 除外するURLパターン（正規表現、複数指定可）
-- `--concurrent`, `-c`: 同時ダウンロード数（デフォルト: 10）
-- `--timeout`: タイムアウト（秒、デフォルト: 30）
-- `--rate-limit`: レート制限（秒、デフォルト: 0.1）
+#### docs-mcp-import-github
 
-**使用例:**
+GitHubリポジトリからインポート
 
 ```bash
-# 基本的な使用
-uv run python scripts/url_import.py https://mcp-jp.apidog.io/
-
-# 特定のパスのみを深さ3でインポート
-uv run python scripts/url_import.py https://docs.example.com \
-    --depth 3 \
-    --include-pattern "/api/.*" \
-    --exclude-pattern ".*/deprecated/.*"
-
-# 同時接続数を増やして高速化（サーバーに優しく）
-uv run python scripts/url_import.py https://docs.example.com \
-    --concurrent 20 \
-    --rate-limit 0.05
+docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
 ```
 
-インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
+#### docs-mcp-generate-metadata
 
-### GitHubリポジトリからインポート
-
-Gitのsparse-checkoutを使用して、GitHubリポジトリの特定フォルダをローカルに取得できます。
+セマンティック検索用のメタデータを生成
 
 ```bash
-uv run python scripts/github_import.py https://github.com/owner/repo/tree/branch/path
+export OPENAI_API_KEY="your-key"
+docs-mcp-generate-metadata
 ```
 
-**主な特徴:**
-- 📁 指定したフォルダのみを効率的に取得（sparse-checkout使用）
-- 🚀 Gitの機能を使った高速ダウンロード
-- 🔒 APIレート制限なし
-- 📦 最小限のデータ転送（shallow clone & blob filter）
+</details>
 
-**オプション:**
-- `--output-dir`, `-o`: 出力先ディレクトリ（デフォルト: リポジトリ名）
+## セキュリティ
 
-**使用例:**
+- APIキーは環境変数で管理
+- `DOCS_FOLDERS`と`DOCS_FILE_EXTENSIONS`でアクセスを制限
+- 外部ネットワークアクセスはOpenAI APIのみ
 
-```bash
-# 基本的な使用（特定フォルダを取得）
-uv run python scripts/github_import.py https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs
+## トラブルシューティング
 
-# リポジトリ全体を取得
-uv run python scripts/github_import.py https://github.com/owner/repo
+<details>
+<summary>よくある問題</summary>
 
-# 別のブランチから取得
-uv run python scripts/github_import.py https://github.com/owner/repo/tree/develop/src
+### Claude Desktopに表示されない
+- 設定ファイルの構文を確認
+- `DOCS_BASE_DIR`が正しいパスを指しているか確認
+- Claude Desktopを再起動
 
-# カスタム出力ディレクトリを指定
-uv run python scripts/github_import.py https://github.com/owner/repo/tree/main/docs \
-    --output-dir my-docs
-```
+### セマンティック検索が動作しない
+- `OPENAI_API_KEY`が設定されているか確認
+- `docs-mcp-generate-metadata`を実行したか確認
 
-インポート後は`generate_metadata.py`を実行してメタデータを更新してください。
+### インポートが失敗する  
+- URL/GitHubリポジトリがアクセス可能か確認
+- ネットワーク接続を確認
 
-## 利用可能なMCPツール
+</details>
 
-### list_docs
-すべてのドキュメントの一覧を取得
-- メタデータ生成済み: `ファイルパス - 説明文`の形式で表示
-- メタデータ未生成: `ファイルパス`のみ表示
+## ライセンス
 
-### get_doc
-指定したドキュメントの全内容を取得
-- 引数: `path` - ドキュメントのファイルパス
+MIT License - [LICENSE](LICENSE)
 
-### grep_docs
-正規表現でドキュメント内を検索
-- 引数: `pattern` - 検索パターン、`ignore_case` - 大文字小文字を無視（デフォルト: true）
+## コントリビューション
 
-### semantic_search
-意味的に関連する内容を検索
-- 引数: `query` - 検索クエリ、`limit` - 結果数（デフォルト: 5）
-- **注意**: `generate_metadata.py`を実行していない場合は使用できません
+[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
