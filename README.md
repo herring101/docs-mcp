@@ -214,12 +214,14 @@ docs-mcp-import-url https://example.com/docs --output-dir docs/imported
 
 #### docs-mcp-import-github
 
-GitHub リポジトリからインポートします。ブランチを指定しなくてもデフォルトブランチを自動検出します。
-`DOCS_FOLDERS` が設定されている場合、出力先を指定しなければ最初のフォルダに保存されます。
+GitHubリポジトリからインポート
 
 ```bash
-docs-mcp-import-github https://github.com/owner/repo
+docs-mcp-import-github https://github.com/owner/repo/tree/main/docs --output-dir docs/imported
 ```
+
+オプション:
+- `--output-dir`, `-o`: 出力ディレクトリ（デフォルト: リポジトリ名）
 
 #### docs-mcp-generate-metadata
 

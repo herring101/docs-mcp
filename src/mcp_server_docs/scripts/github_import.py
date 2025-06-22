@@ -77,12 +77,9 @@ def import_with_sparse_checkout(url: str, output_dir: str | None = None):
     if branch is None:
         branch = detect_default_branch(clone_url)
 
-    # デフォルトの出力先を決定
+    # デフォルトの出力先をリポジトリ名に設定
     if output_dir is None:
-        docs_folders = os.getenv("DOCS_FOLDERS")
-        output_dir = (
-            docs_folders.split(",")[0].strip() if docs_folders else repo
-        )
+        output_dir = repo
 
     print("Importing from GitHub repository using Git")
     print(f"Owner: {owner}")
