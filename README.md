@@ -45,21 +45,19 @@ pip install uv
 - 🧠 **セマンティック検索** - OpenAI Embeddingsを使った意味的な類似検索（要設定）
 - 📝 **ドキュメント取得** - 指定したドキュメントの全内容を取得
 
-## 使い方は2種類
+## クイックスタート
 
-### 🚀 方法1: シンプルに使う（セマンティック検索なし）
+### 🚀 最もシンプルな使い方
+
+既存のドキュメントがあるプロジェクトですぐに使えます：
 
 ```bash
-# 1. プロジェクトを作成してドキュメントを配置
-mkdir my-project
-cd my-project
-mkdir docs
-# docs/にドキュメントを配置
-
-# 2. Claude Desktopの設定に追加
+# ドキュメント管理用フォルダを作成
+mkdir -p my-docs/docs
+# ドキュメントファイルをdocs/に配置
 ```
 
-Claude Desktop設定（`claude_desktop_config.json`）:
+Claude Desktopの設定（`claude_desktop_config.json`）に追加：
 ```json
 {
   "mcpServers": {
@@ -67,39 +65,79 @@ Claude Desktop設定（`claude_desktop_config.json`）:
       "command": "uvx",
       "args": ["docs-mcp"],
       "env": {
-        "DOCS_BASE_DIR": "/path/to/my-project"
+        "DOCS_BASE_DIR": "/path/to/my-docs"
       }
     }
   }
 }
 ```
 
-これだけで使えます！ただし、セマンティック検索は利用できません。
+**重要**: docs-mcpは常にプロジェクトフォルダ内の`docs/`ディレクトリを参照します。
 
-### 🎯 方法2: フル機能で使う（セマンティック検索あり）
+## セットアップガイド
+
+### 方法1: 既存のドキュメントで使う
+
+手元にあるMarkdownやテキストファイルをすぐに検索可能にできます：
+
+1. プロジェクトフォルダを作成
+2. `docs/`ディレクトリにドキュメントを配置
+3. Claude Desktopの設定を更新
+
+✅ **メリット**: コマンドライン操作不要、すぐに使える  
+❌ **デメリット**: インポートツールが使えない
+
+### 方法2: インポートツールを活用する
+
+GitHubやWebサイトからドキュメントを取り込む場合：
 
 ```bash
-# 1. セットアップ
-uv init my-project
-
-# 2. プロジェクトに移動しドキュメントディレクトリを作成
-cd my-project
+# ドキュメント管理プロジェクトをセットアップ
+uv init my-docs
+cd my-docs
 uv add docs-mcp
-mkdir docs
 
-# 3. ドキュメントをインポート（オプション）
-uv run docs-mcp-import-url https://docs.example.com
-# または
+# GitHubからドキュメントをインポート
 uv run docs-mcp-import-github https://github.com/owner/repo
 
-# 4. メタデータを生成（セマンティック検索用）
-export OPENAI_API_KEY="your-key"
-uv run docs-mcp-generate-metadata
-
-# 5. Claude Desktopの設定は方法1と同じ
+# 特定のディレクトリだけインポート
+uv run docs-mcp-import-github https://github.com/owner/repo/tree/main/docs -o project-docs
 ```
 
-#### 詳細な設定例（環境変数をフル活用）
+✅ **メリット**: 外部ドキュメントを簡単に取り込める  
+❌ **デメリット**: uvのセットアップが必要
+
+## 高度な機能
+
+### 🧠 セマンティック検索を有効にする
+
+OpenAI Embeddingsを使った意味的な検索を追加できます：
+
+```bash
+# 1. OpenAI APIキーを設定
+export OPENAI_API_KEY="sk-..."
+
+# 2. メタデータを生成（プロジェクトディレクトリで実行）
+uv run docs-mcp-generate-metadata
+```
+
+Claude Desktopの設定でAPIキーを追加：
+```json
+{
+  "mcpServers": {
+    "docs": {
+      "command": "uvx",
+      "args": ["docs-mcp"],
+      "env": {
+        "DOCS_BASE_DIR": "/path/to/my-docs",
+        "OPENAI_API_KEY": "sk-..."  // セマンティック検索が有効になる
+      }
+    }
+  }
+}
+```
+
+### 詳細な設定オプション
 
 ```json
 {
@@ -108,8 +146,8 @@ uv run docs-mcp-generate-metadata
       "command": "uvx",
       "args": ["docs-mcp"],
       "env": {
-        "DOCS_BASE_DIR": "/path/to/my-project",
-        "OPENAI_API_KEY": "sk-...",  // セマンティック検索を有効化
+        "DOCS_BASE_DIR": "/path/to/my-docs",
+        "OPENAI_API_KEY": "sk-...",
         "DOCS_FOLDERS": "api,guides,examples",  // 特定のフォルダのみ読み込み
         "DOCS_FILE_EXTENSIONS": ".md,.mdx,.txt,.py"  // 対象ファイル拡張子を制限
       }
@@ -120,18 +158,16 @@ uv run docs-mcp-generate-metadata
 
 ## 利用可能なツール
 
-### 基本ツール（方法1でも利用可能）
+### MCPツール（Claude内で使用）
 - `list_docs` - ドキュメント一覧表示
 - `get_doc` - ドキュメント内容取得  
 - `grep_docs` - 正規表現検索
+- `semantic_search` - 意味的な類似検索（要OpenAI APIキー）
 
-### 追加ツール（方法2で利用可能）
-- `semantic_search` - 意味的な類似検索（要メタデータ生成）
-
-### コマンドラインツール（方法2で利用可能）
+### コマンドラインツール（ドキュメント管理用）
 - `docs-mcp-import-url` - Webサイトからドキュメントをインポート
 - `docs-mcp-import-github` - GitHubリポジトリからインポート
-- `docs-mcp-generate-metadata` - 検索用メタデータを生成
+- `docs-mcp-generate-metadata` - セマンティック検索用メタデータを生成
 
 ## 必要な環境
 
@@ -167,7 +203,7 @@ uv run docs-mcp-generate-metadata
 ### ディレクトリ構造の例
 
 ```
-my-project/
+my-docs/
 └── docs/
     ├── api/
     │   └── reference.md
@@ -202,11 +238,11 @@ uv build
 Webサイトからドキュメントをインポート
 
 ```bash
-docs-mcp-import-url https://example.com/docs --output-dir docs/imported
+docs-mcp-import-url https://example.com/docs --output-dir imported
 ```
 
 オプション:
-- `--output-dir`, `-o`: 出力ディレクトリ
+- `--output-dir`, `-o`: 出力ディレクトリ名（`docs/`配下に保存）
 - `--depth`, `-d`: クロール深度
 - `--include-pattern`, `-i`: 含めるURLパターン
 - `--exclude-pattern`, `-e`: 除外するURLパターン
@@ -214,14 +250,21 @@ docs-mcp-import-url https://example.com/docs --output-dir docs/imported
 
 #### docs-mcp-import-github
 
-GitHubリポジトリからインポート
+GitHubリポジトリからインポート。ブランチを指定しない場合はデフォルトブランチ（main/master等）を自動検出します。
 
 ```bash
-docs-mcp-import-github https://github.com/owner/repo/tree/main/docs --output-dir docs/imported
+# リポジトリ全体をインポート
+docs-mcp-import-github https://github.com/owner/repo
+
+# 特定のパスのみインポート（docs/importedに保存される）
+docs-mcp-import-github https://github.com/owner/repo/tree/main/docs --output-dir imported
+
+# masterブランチのリポジトリも自動検出
+docs-mcp-import-github https://github.com/Cysharp/UniTask
 ```
 
 オプション:
-- `--output-dir`, `-o`: 出力ディレクトリ（デフォルト: リポジトリ名）
+- `--output-dir`, `-o`: 出力ディレクトリ名（`docs/`配下に保存。デフォルト: リポジトリ名）
 
 #### docs-mcp-generate-metadata
 
