@@ -5,12 +5,12 @@ Gitのsparse-checkoutを使用してGitHubリポジトリの特定フォルダ�
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
-import re
 
 
 def parse_github_url(url: str) -> tuple[str, str, str | None, str]:
@@ -80,11 +80,9 @@ def import_with_sparse_checkout(url: str, output_dir: str | None = None):
     # デフォルトの出力先を決定
     if output_dir is None:
         docs_folders = os.getenv("DOCS_FOLDERS")
-        if docs_folders:
-            # DOCS_FOLDERSが設定されている場合は最初のフォルダを使用
-            output_dir = docs_folders.split(",")[0].strip()
-        else:
-            output_dir = repo
+        output_dir = (
+            docs_folders.split(",")[0].strip() if docs_folders else repo
+        )
 
     print("Importing from GitHub repository using Git")
     print(f"Owner: {owner}")
