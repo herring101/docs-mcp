@@ -79,12 +79,12 @@ Claude Desktop設定（`claude_desktop_config.json`）:
 ### 🎯 方法2: フル機能で使う（セマンティック検索あり）
 
 ```bash
-# 1. インストール
-pip install docs-mcp
+# 1. セットアップ
+uv init my-docs
 
-# 2. プロジェクトを作成
-mkdir my-project
-cd my-project
+# 2. プロジェクトに移動しドキュメントディレクトリを作成
+cd my-docs
+activate      # uv環境をアクティブ化
 mkdir docs
 
 # 3. ドキュメントをインポート（オプション）
