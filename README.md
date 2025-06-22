@@ -81,10 +81,10 @@ Claude Desktop設定（`claude_desktop_config.json`）:
 ```bash
 # 1. セットアップ
 uv init my-project
-uv add docs-mcp
 
 # 2. プロジェクトに移動しドキュメントディレクトリを作成
 cd my-project
+uv add docs-mcp
 mkdir docs
 
 # 3. ドキュメントをインポート（オプション）
