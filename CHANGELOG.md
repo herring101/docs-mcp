@@ -5,6 +5,24 @@
 フォーマットは[Keep a Changelog](https://keepachangelog.com/ja/1.0.0/)に基づいており、
 このプロジェクトは[セマンティック バージョニング](https://semver.org/lang/ja/)に準拠しています。
 
+## [Unreleased]
+
+## [0.1.1] - 2025-06-22
+
+### 修正
+- GitHub importでmasterブランチがデフォルトのリポジトリに対応（#2）
+- デフォルトブランチの自動検出機能を追加
+
+### 変更
+- READMEを再構成してより分かりやすく
+- `my-project`を`my-docs`に変更して用途を明確化
+- 開発フローをdev→mainに変更
+
+### 追加
+- GitHub ActionsのCIにdevブランチを追加
+- Issue/PRテンプレートを追加
+- CONTRIBUTINGにブランチ戦略を追加
+
 ## [0.1.0] - 2025-06-21
 
 ### 追加
