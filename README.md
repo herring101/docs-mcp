@@ -80,10 +80,10 @@ Claude Desktop設定（`claude_desktop_config.json`）:
 
 ```bash
 # 1. セットアップ
-uv init my-docs
+uv init my-project
 
 # 2. プロジェクトに移動しドキュメントディレクトリを作成
-cd my-docs
+cd my-project
 activate      # uv環境をアクティブ化
 mkdir docs
 
