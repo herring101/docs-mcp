@@ -90,7 +90,7 @@ mkdir docs
 # 3. ドキュメントをインポート（オプション）
 uv run docs-mcp-import-url https://docs.example.com
 # または
-uv run docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
+uv run docs-mcp-import-github https://github.com/owner/repo
 
 # 4. メタデータを生成（セマンティック検索用）
 export OPENAI_API_KEY="your-key"
@@ -214,10 +214,11 @@ docs-mcp-import-url https://example.com/docs --output-dir docs/imported
 
 #### docs-mcp-import-github
 
-GitHubリポジトリからインポート
+GitHub リポジトリからインポートします。ブランチを指定しなくてもデフォルトブランチを自動検出します。
+`DOCS_FOLDERS` が設定されている場合、出力先を指定しなければ最初のフォルダに保存されます。
 
 ```bash
-docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
+docs-mcp-import-github https://github.com/owner/repo
 ```
 
 #### docs-mcp-generate-metadata

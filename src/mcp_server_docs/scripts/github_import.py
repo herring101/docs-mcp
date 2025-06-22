@@ -10,10 +10,14 @@ import subprocess
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
+import re
 
 
-def parse_github_url(url: str) -> tuple[str, str, str, str]:
-    """GitHubのURLを解析してリポジトリ情報を取得"""
+def parse_github_url(url: str) -> tuple[str, str, str | None, str]:
+    """GitHub の URL を解析してリポジトリ情報を取得
+
+    ブランチが URL に明示されていない場合は ``None`` を返す。
+    """
     # URLパターン: https://github.com/{owner}/{repo}/tree/{branch}/{path}
     parsed = urlparse(url)
     parts = parsed.path.strip("/").split("/")
@@ -25,7 +29,7 @@ def parse_github_url(url: str) -> tuple[str, str, str, str]:
     repo = parts[1]
 
     # デフォルトブランチとパス
-    branch = "main"
+    branch: str | None = None
     path = ""
 
     if len(parts) > 3 and parts[2] == "tree":
@@ -51,13 +55,36 @@ def run_command(cmd: list[str], cwd: str | None = None) -> subprocess.CompletedP
     return result
 
 
+def detect_default_branch(clone_url: str) -> str:
+    """リポジトリのデフォルトブランチを検出する"""
+    try:
+        result = run_command(["git", "ls-remote", "--symref", clone_url, "HEAD"])
+        for line in result.stdout.splitlines():
+            match = re.search(r"refs/heads/(?P<branch>[^\t]+)\tHEAD", line)
+            if match:
+                return match.group("branch")
+    except Exception as exc:
+        print(f"Warning: failed to detect default branch: {exc}")
+    return "main"
+
+
 def import_with_sparse_checkout(url: str, output_dir: str | None = None):
     """sparse-checkoutを使用して特定のディレクトリのみをクローン"""
     owner, repo, branch, target_path = parse_github_url(url)
 
-    # デフォルトの出力先をリポジトリ名に設定
+    clone_url = f"https://github.com/{owner}/{repo}.git"
+
+    if branch is None:
+        branch = detect_default_branch(clone_url)
+
+    # デフォルトの出力先を決定
     if output_dir is None:
-        output_dir = repo
+        docs_folders = os.getenv("DOCS_FOLDERS")
+        if docs_folders:
+            # DOCS_FOLDERSが設定されている場合は最初のフォルダを使用
+            output_dir = docs_folders.split(",")[0].strip()
+        else:
+            output_dir = repo
 
     print("Importing from GitHub repository using Git")
     print(f"Owner: {owner}")
@@ -68,9 +95,6 @@ def import_with_sparse_checkout(url: str, output_dir: str | None = None):
     # 一時ディレクトリでクローン
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_dir = os.path.join(temp_dir, repo)
-
-        # クローンURL
-        clone_url = f"https://github.com/{owner}/{repo}.git"
 
         print("\nCloning repository (sparse checkout)...")
 
