@@ -84,17 +84,16 @@ uv init my-project
 
 # 2. プロジェクトに移動しドキュメントディレクトリを作成
 cd my-project
-activate      # uv環境をアクティブ化
 mkdir docs
 
 # 3. ドキュメントをインポート（オプション）
-docs-mcp-import-url https://docs.example.com
+uv run docs-mcp-import-url https://docs.example.com
 # または
-docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
+uv run docs-mcp-import-github https://github.com/owner/repo/tree/main/docs
 
 # 4. メタデータを生成（セマンティック検索用）
 export OPENAI_API_KEY="your-key"
-docs-mcp-generate-metadata
+uv run docs-mcp-generate-metadata
 
 # 5. Claude Desktopの設定は方法1と同じ
 ```
