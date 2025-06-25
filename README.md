@@ -5,6 +5,10 @@
 
 ユーザーが設定したドキュメントを効率的に検索・参照できるMCPサーバーです。
 
+<a href="https://glama.ai/mcp/servers/@herring101/docs-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@herring101/docs-mcp/badge" alt="Docs-MCP MCP server" />
+</a>
+
 ## 前提条件
 
 docs-mcpを使用するには[uv](https://docs.astral.sh/uv/)が必要です。uvはPythonパッケージとプロジェクト管理のための高速なツールです。
