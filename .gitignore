@@ -67,4 +67,4 @@ docs_metadata.json
 
 # Testing
 htmlcov/
-.hypothesis/
+.hypothesis/company-docs/
