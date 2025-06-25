@@ -30,13 +30,14 @@ async def list_docs() -> str:
 
 
 @mcp.tool()
-async def get_doc(path: str) -> str:
-    """指定したドキュメントの内容を取得
+async def get_doc(path: str, page: int | None = None) -> str:
+    """指定したドキュメントの内容を取得（ページネーション対応）
 
     Args:
         path: ドキュメントのファイルパス
+        page: ページ番号（1から開始、Noneの場合は全文取得）
     """
-    return doc_manager.get_document(path)
+    return doc_manager.get_document(path, page)
 
 
 @mcp.tool()

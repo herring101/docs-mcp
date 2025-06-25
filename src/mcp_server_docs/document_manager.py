@@ -118,6 +118,10 @@ class DocumentManager:
         self.docs_metadata: dict[str, str] = {}
         self.embeddings_cache: dict[str, list[float]] = {}
 
+        # ページネーション設定（文字数ベース）
+        self.max_chars_per_page = int(os.getenv("DOCS_MAX_CHARS_PER_PAGE", "10000"))
+        self.large_file_threshold = int(os.getenv("DOCS_LARGE_FILE_THRESHOLD", "15000"))  # 文字数ベース
+
         # OpenAI クライアント初期化
         api_key = os.getenv("OPENAI_API_KEY")
         self.client = OpenAI(api_key=api_key) if api_key else None
@@ -191,11 +195,72 @@ class DocumentManager:
                 result.append(path)
         return "\n".join(result)
 
-    def get_document(self, path: str) -> str:
-        """指定されたドキュメントの内容を返す"""
+    def get_document(self, path: str, page: int | None = None) -> str:
+        """指定されたドキュメントの内容を返す（文字数ベースページネーション対応）
+        
+        Args:
+            path: ドキュメントのファイルパス
+            page: ページ番号（1から開始、Noneの場合は自動判定）
+        """
         if path not in self.docs_content:
             return f"Error: Document not found: {path}"
-        return self.docs_content[path]
+        
+        content = self.docs_content[path]
+        total_chars = len(content)
+        
+        # ページ指定がない場合（従来の動作）
+        if page is None:
+            # 大きなファイルには自動的に1ページ目を返す
+            if total_chars > self.large_file_threshold:
+                # 1ページ目として処理
+                page = 1
+            else:
+                # 小さなファイルは従来通り全文を返す
+                return content
+        
+        # ページネーション処理（文字数ベース）
+        total_pages = (total_chars + self.max_chars_per_page - 1) // self.max_chars_per_page
+        
+        # エラーハンドリング
+        if page < 1:
+            return f"Error: Page number must be 1 or greater"
+        if page > total_pages:
+            return f"Error: Page {page} not found. Total pages: {total_pages} (max chars per page: {self.max_chars_per_page:,})"
+        
+        # ページ範囲計算（文字数ベース、行を分割しないよう調整）
+        start_char = (page - 1) * self.max_chars_per_page
+        end_char = min(start_char + self.max_chars_per_page, total_chars)
+        
+        # 行の途中で切れないよう調整
+        if end_char < total_chars:
+            # 次の改行文字まで含める
+            next_newline = content.find('\n', end_char)
+            if next_newline != -1:
+                end_char = next_newline + 1
+        
+        page_content = content[start_char:end_char]
+        
+        # 行数カウント（表示用）
+        lines_before_start = content[:start_char].count('\n')
+        page_lines = page_content.count('\n')
+        total_lines = content.count('\n') + 1
+        start_line = lines_before_start + 1
+        end_line = min(start_line + page_lines, total_lines)
+        
+        # メタデータヘッダー
+        header = f"📄 Document: {path}\n"
+        header += f"📖 Page {page}/{total_pages} (chars {start_char+1:,}-{end_char:,}/{total_chars:,})\n"
+        header += f"📏 Lines {start_line}-{end_line}/{total_lines:,} | Max chars per page: {self.max_chars_per_page:,}\n"
+        
+        # 大きなファイルで自動的にページ1を表示した場合は使い方を追加
+        if page == 1 and total_chars > self.large_file_threshold:
+            header += f"⚠️  Large document auto-paginated. To see other pages:\n"
+            header += f"💡 get_doc('{path}', page=2)  # Next page\n"
+            header += f"💡 get_doc('{path}', page={total_pages})  # Last page\n"
+        
+        header += "─" * 60 + "\n\n"
+        
+        return header + page_content
 
     def grep_search(self, pattern: str, ignore_case: bool = True) -> str:
         """正規表現でドキュメントを検索"""

@@ -179,3 +179,135 @@ class TestDocumentManager:
         manager.load_documents()
 
         assert manager.get_doc_count() == 3
+
+    def test_pagination_basic(self):
+        """ページネーション基本機能のテスト（文字数ベース）"""
+        # 長いテストファイルを作成（約600文字）
+        content = "\n".join([f"Line {i+1}: This is test content with some additional text to increase character count" for i in range(10)])
+        test_file = self.docs_dir / "long_test.md"
+        test_file.write_text(content)
+
+        # デフォルトの文字数を調整（300文字/ページ）
+        os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "300"
+        
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # 1ページ目
+        page1 = manager.get_document("long_test.md", page=1)
+        assert "Page 1/" in page1
+        assert "chars 1-" in page1
+        assert "Line 1:" in page1
+
+        # 2ページ目
+        page2 = manager.get_document("long_test.md", page=2)
+        assert "Page 2/" in page2
+        assert "chars " in page2
+        assert "Line " in page2
+        
+        # 環境変数をクリア
+        del os.environ["DOCS_MAX_CHARS_PER_PAGE"]
+
+    def test_pagination_errors(self):
+        """ページネーションエラーハンドリングのテスト"""
+        content = "\n".join([f"Line {i+1}" for i in range(5)])
+        test_file = self.docs_dir / "test.md"
+        test_file.write_text(content)
+
+        # 10文字/ページに設定
+        os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "10"
+        
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # ページ番号が1未満
+        result = manager.get_document("test.md", page=0)
+        assert "Error: Page number must be 1 or greater" in result
+
+        # ページ番号が総ページ数を超過
+        result = manager.get_document("test.md", page=50)
+        assert "Error: Page 50 not found" in result
+        assert "Total pages:" in result
+        
+        # 環境変数をクリア
+        del os.environ["DOCS_MAX_CHARS_PER_PAGE"]
+
+    def test_large_file_warning(self):
+        """大きなファイル警告機能のテスト（文字数ベース）"""
+        # 大きなファイルを作成（約20000文字）
+        content = "\n".join([f"Line {i+1}: This is content with sufficient characters to test large file threshold functionality" for i in range(200)])
+        test_file = self.docs_dir / "large_test.md"
+        test_file.write_text(content)
+
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # ページ指定なしで取得（自動的に1ページ目が表示される）
+        result = manager.get_document("large_test.md")
+        assert "📄 Document: large_test.md" in result
+        assert "📖 Page 1/" in result
+        assert "chars 1-" in result
+        assert "⚠️  Large document auto-paginated" in result
+        assert "💡 get_doc('large_test.md', page=2)" in result
+        # 1ページ目の内容が含まれる
+        assert "Line 1:" in result
+
+    def test_small_file_no_warning(self):
+        """小さなファイルには警告が表示されないテスト"""
+        content = "\n".join([f"Line {i+1}" for i in range(10)])
+        test_file = self.docs_dir / "small_test.md"
+        test_file.write_text(content)
+
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # ページ指定なしで取得（警告なし）
+        result = manager.get_document("small_test.md")
+        assert "⚠️  Large document" not in result
+        assert "Line 1" in result
+
+    def test_pagination_environment_variables(self):
+        """ページネーション環境変数のテスト（文字数ベース）"""
+        # 環境変数を設定
+        os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "500"
+        os.environ["DOCS_LARGE_FILE_THRESHOLD"] = "1000"
+
+        content = "\n".join([f"Line {i+1}: Content with sufficient length to test character-based pagination" for i in range(20)])
+        test_file = self.docs_dir / "env_test.md"
+        test_file.write_text(content)
+
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # 設定が正しく読み込まれているか確認
+        assert manager.max_chars_per_page == 500
+        assert manager.large_file_threshold == 1000
+
+        # 閾値を超えるため警告が表示される
+        result = manager.get_document("env_test.md")
+        assert "⚠️  Large document auto-paginated" in result
+
+        # 最大文字数500でページネーション
+        page1 = manager.get_document("env_test.md", page=1)
+        assert "Max chars per page: 500" in page1
+
+        # 環境変数をクリア
+        del os.environ["DOCS_MAX_CHARS_PER_PAGE"]
+        del os.environ["DOCS_LARGE_FILE_THRESHOLD"]
+
+    def test_backward_compatibility(self):
+        """後方互換性のテスト（既存のAPIが引き続き動作する）"""
+        content = "# Test Document\n\nThis is a test."
+        test_file = self.docs_dir / "compat_test.md"
+        test_file.write_text(content)
+
+        manager = DocumentManager()
+        manager.load_documents()
+
+        # 従来の引数なしの呼び出し
+        result = manager.get_document("compat_test.md")
+        assert result == content
+
+        # 存在しないファイル
+        result = manager.get_document("notfound.md")
+        assert "Error: Document not found" in result

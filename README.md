@@ -44,6 +44,7 @@ pip install uv
 - 🔍 **grep検索** - 正規表現を使った高速な全文検索
 - 🧠 **セマンティック検索** - OpenAI Embeddingsを使った意味的な類似検索（要設定）
 - 📝 **ドキュメント取得** - 指定したドキュメントの全内容を取得
+- 📖 **ページネーション対応** - 大きなドキュメントをページ単位で効率的に閲覧
 
 ## クイックスタート
 
@@ -149,7 +150,9 @@ Claude Desktopの設定でAPIキーを追加：
         "DOCS_BASE_DIR": "/path/to/my-docs",
         "OPENAI_API_KEY": "sk-...",
         "DOCS_FOLDERS": "api,guides,examples",  // 特定のフォルダのみ読み込み
-        "DOCS_FILE_EXTENSIONS": ".md,.mdx,.txt,.py"  // 対象ファイル拡張子を制限
+        "DOCS_FILE_EXTENSIONS": ".md,.mdx,.txt,.py",  // 対象ファイル拡張子を制限
+        "DOCS_MAX_CHARS_PER_PAGE": "5000",  // 1ページあたりの最大文字数
+        "DOCS_LARGE_FILE_THRESHOLD": "10000"  // 自動ページネーション閾値（文字数）
       }
     }
   }
@@ -160,9 +163,36 @@ Claude Desktopの設定でAPIキーを追加：
 
 ### MCPツール（Claude内で使用）
 - `list_docs` - ドキュメント一覧表示
-- `get_doc` - ドキュメント内容取得  
+- `get_doc` - ドキュメント内容取得（ページネーション対応）
 - `grep_docs` - 正規表現検索
 - `semantic_search` - 意味的な類似検索（要OpenAI APIキー）
+
+#### 📖 ページネーション機能の使い方
+
+大きなドキュメント（15,000文字超）では自動的に1ページ目が表示され、ページネーションの使用が推奨されます：
+
+```
+# 基本的な使い方（従来通り）
+get_doc("path/to/document.md")  # 小さなファイルは全文表示、大きなファイルは自動的に1ページ目
+
+# ページネーション使用
+get_doc("path/to/document.md", page=1)  # 1ページ目（デフォルト10,000文字まで）
+get_doc("path/to/document.md", page=2)  # 2ページ目
+get_doc("path/to/document.md", page=3)  # 3ページ目
+```
+
+**ページネーション出力例：**
+```
+📄 Document: pytest/reference/plugin_list.rst
+📖 Page 2/5 (chars 10,001-20,000/45,123)
+📏 Lines 285-570/1,324 | Max chars per page: 10,000
+⚠️  Large document auto-paginated. To see other pages:
+💡 get_doc('pytest/reference/plugin_list.rst', page=3)  # Next page
+💡 get_doc('pytest/reference/plugin_list.rst', page=5)  # Last page
+────────────────────────────────────────────────────────────
+
+[ドキュメントの内容]
+```
 
 ### コマンドラインツール（ドキュメント管理用）
 - `docs-mcp-import-url` - Webサイトからドキュメントをインポート
@@ -185,6 +215,8 @@ Claude Desktopの設定でAPIキーを追加：
 | `DOCS_BASE_DIR` | ドキュメントプロジェクトのルート | 現在のディレクトリ |
 | `DOCS_FOLDERS` | 読み込むフォルダ（カンマ区切り） | `docs/`内の全フォルダ |
 | `DOCS_FILE_EXTENSIONS` | 対象ファイル拡張子 | デフォルトの拡張子リスト |
+| `DOCS_MAX_CHARS_PER_PAGE` | ページネーションの1ページあたりの最大文字数 | 10000 |
+| `DOCS_LARGE_FILE_THRESHOLD` | 大きなファイルの自動ページネーション閾値（文字数） | 15000 |
 
 ### サポートされるファイル形式
 
