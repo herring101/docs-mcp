@@ -183,13 +183,18 @@ class TestDocumentManager:
     def test_pagination_basic(self):
         """ページネーション基本機能のテスト（文字数ベース）"""
         # 長いテストファイルを作成（約600文字）
-        content = "\n".join([f"Line {i+1}: This is test content with some additional text to increase character count" for i in range(10)])
+        content = "\n".join(
+            [
+                f"Line {i + 1}: This is test content with some additional text to increase character count"
+                for i in range(10)
+            ]
+        )
         test_file = self.docs_dir / "long_test.md"
         test_file.write_text(content)
 
         # デフォルトの文字数を調整（300文字/ページ）
         os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "300"
-        
+
         manager = DocumentManager()
         manager.load_documents()
 
@@ -204,19 +209,19 @@ class TestDocumentManager:
         assert "Page 2/" in page2
         assert "chars " in page2
         assert "Line " in page2
-        
+
         # 環境変数をクリア
         del os.environ["DOCS_MAX_CHARS_PER_PAGE"]
 
     def test_pagination_errors(self):
         """ページネーションエラーハンドリングのテスト"""
-        content = "\n".join([f"Line {i+1}" for i in range(5)])
+        content = "\n".join([f"Line {i + 1}" for i in range(5)])
         test_file = self.docs_dir / "test.md"
         test_file.write_text(content)
 
         # 10文字/ページに設定
         os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "10"
-        
+
         manager = DocumentManager()
         manager.load_documents()
 
@@ -228,14 +233,19 @@ class TestDocumentManager:
         result = manager.get_document("test.md", page=50)
         assert "Error: Page 50 not found" in result
         assert "Total pages:" in result
-        
+
         # 環境変数をクリア
         del os.environ["DOCS_MAX_CHARS_PER_PAGE"]
 
     def test_large_file_warning(self):
         """大きなファイル警告機能のテスト（文字数ベース）"""
         # 大きなファイルを作成（約20000文字）
-        content = "\n".join([f"Line {i+1}: This is content with sufficient characters to test large file threshold functionality" for i in range(200)])
+        content = "\n".join(
+            [
+                f"Line {i + 1}: This is content with sufficient characters to test large file threshold functionality"
+                for i in range(200)
+            ]
+        )
         test_file = self.docs_dir / "large_test.md"
         test_file.write_text(content)
 
@@ -254,7 +264,7 @@ class TestDocumentManager:
 
     def test_small_file_no_warning(self):
         """小さなファイルには警告が表示されないテスト"""
-        content = "\n".join([f"Line {i+1}" for i in range(10)])
+        content = "\n".join([f"Line {i + 1}" for i in range(10)])
         test_file = self.docs_dir / "small_test.md"
         test_file.write_text(content)
 
@@ -272,7 +282,12 @@ class TestDocumentManager:
         os.environ["DOCS_MAX_CHARS_PER_PAGE"] = "500"
         os.environ["DOCS_LARGE_FILE_THRESHOLD"] = "1000"
 
-        content = "\n".join([f"Line {i+1}: Content with sufficient length to test character-based pagination" for i in range(20)])
+        content = "\n".join(
+            [
+                f"Line {i + 1}: Content with sufficient length to test character-based pagination"
+                for i in range(20)
+            ]
+        )
         test_file = self.docs_dir / "env_test.md"
         test_file.write_text(content)
 
